@@ -348,21 +348,21 @@ export default function SuratMenyurat() {
   ];
 
   return (
-    <div style={{ padding:24 }}>
+    <div style={{ padding: window.innerWidth < 600 ? '12px 10px' : 24 }}>
       <SectionHeader
         title="📋 Surat Menyurat & Arsip"
         sub="Kelola pengajuan surat warga, arsip, dan format dokumen desa"
         action={
-          <div style={{ display:'flex', gap:8 }}>
-            <Btn onClick={()=>{ setFormPengaturan({...desa}); setShowPengaturan(true); }} variant="ghost">⚙ Pengaturan Desa</Btn>
-            <Btn onClick={()=>{ setShowModalArsip(true); setError(''); }} variant="ghost">+ Tambah Arsip</Btn>
-            <Btn onClick={()=>{ setShowModalAjuan(true); setError(''); }} variant="primary">+ Pengajuan Baru</Btn>
+          <div style={{ display:'flex', gap:8, flexWrap:'wrap', justifyContent:'flex-end' }}>
+            <Btn onClick={()=>{ setFormPengaturan({...desa}); setShowPengaturan(true); }} variant="ghost">⚙</Btn>
+            <Btn onClick={()=>{ setShowModalArsip(true); setError(''); }} variant="ghost">+ Arsip</Btn>
+            <Btn onClick={()=>{ setShowModalAjuan(true); setError(''); }} variant="primary">+ Pengajuan</Btn>
           </div>
         }
       />
 
       {/* Info petugas yang login */}
-      <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:16, padding:'10px 16px', background:'#EBF3FC', borderRadius:10, border:'1px solid #B5D4F4', fontSize:13 }}>
+     <div style={{ display:'flex', alignItems:'flex-start', gap:10, marginBottom:16, padding:'10px 16px', background:'#EBF3FC', borderRadius:10, border:'1px solid #B5D4F4', fontSize:12, flexWrap:'wrap' }}>
         <span style={{ fontSize:16 }}>👤</span>
         <span style={{ color:'#1B5EA0' }}>
           Login sebagai <strong>{namaPetugasLogin}</strong> — {jabatanLogin}.
