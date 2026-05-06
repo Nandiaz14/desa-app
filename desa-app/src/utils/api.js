@@ -1,5 +1,5 @@
 // src/utils/api.js
-const BASE_URL = 'http://localhost:5000/api';
+const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 // Ambil token dari sessionStorage
 function getToken() {
