@@ -41,58 +41,123 @@ function renderIsi(tpl, warga, keperluan, desa, nomor, tanggal) {
     .replace(/\[TANGGAL\]/g, tanggal || formatTanggal(getTodayStr()));
 }
 
-// Komponen Surat Resmi (untuk preview & print)
+// ══════════════════════════════════════════════════════════════
+// GANTI fungsi SuratResmi di FormatSurat.js dan SuratMenyurat.js
+// Cari: function SuratResmi({ ... sampai kurung tutup }
+// Ganti dengan kode di bawah ini
+// ══════════════════════════════════════════════════════════════
+
 function SuratResmi({ tpl, jenis, warga, keperluan, desa, nomor, tanggal, kepalaDesa, nip }) {
-  const isiRendered = renderIsi(tpl?.isi, warga, keperluan, desa, nomor, tanggal);
+  const isiParts = (tpl?.isi || '').split('[DATA_WARGA]');
+  const isiBefore = renderIsi(isiParts[0] || '', null, keperluan, desa, nomor, tanggal);
+  const isiAfter  = isiParts[1] ? renderIsi(isiParts[1], null, keperluan, desa, nomor, tanggal) : '';
   const penutupRendered = (tpl?.penutup || '')
     .replace(/\[NAMA_DESA\]/g, desa?.namaDesa || '')
     .replace(/\[KECAMATAN\]/g, desa?.kecamatan || '');
 
+  const dataWargaRows = warga ? [
+    { label: 'Nama lengkap',          value: warga.nama,           bold: false },
+    { label: 'Tempat, tanggal lahir', value: `${warga.tempatLahir || ''}, ${formatTanggal(warga.tanggalLahir)}`, bold: false },
+    { label: 'Jenis kelamin',         value: warga.jenisKelamin,   bold: false },
+    { label: 'Status Perkawinan',     value: warga.statusPerkawinan || '-', bold: false },
+    { label: 'Pekerjaan',             value: warga.pekerjaan,      bold: false },
+    { label: 'Nomor KTP',             value: warga.nik,            bold: true  },
+    { label: 'Tempat tinggal',        value: `${warga.alamat || ''}, RT ${warga.rt || ''} RW ${warga.rw || ''}${warga.dusun ? ', ' + warga.dusun : ''}\nDesa ${desa?.namaDesa || ''} Kec. ${desa?.kecamatan || ''} Kab. ${desa?.kabupaten || ''}`, bold: false },
+  ] : [];
+
   return (
-    <div style={{ fontFamily: 'Times New Roman, serif', fontSize: 12, lineHeight: 1.8, color: '#000', background: '#fff', padding: '32px 40px', minHeight: 600 }}>
+    <div style={{
+      fontFamily: 'Times New Roman, serif',
+      fontSize: 12,
+      lineHeight: 1.7,
+      color: '#000',
+      background: '#fff',
+      padding: '20px 48px 24px 48px',
+      width: '100%',
+      boxSizing: 'border-box',
+    }}>
+
       {/* KOP SURAT */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16, paddingBottom: 10, borderBottom: '3px double #000', marginBottom: 20 }}>
-        <div style={{ width: 70, height: 70, borderRadius: '50%', border: '2px solid #1B4F8A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, flexShrink: 0, background: '#f0f4fb' }}>🏛</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, paddingBottom: 10, borderBottom: '4px solid #000', marginBottom: 16 }}>
+        <img
+          src="/logo-cirebon.jpeg"
+          alt="Logo"
+          style={{ width: 70, height: 70, objectFit: 'contain', flexShrink: 0 }}
+          onError={e => { e.target.style.display = 'none'; }}
+        />
         <div style={{ flex: 1, textAlign: 'center' }}>
-          <div style={{ fontSize: 11, letterSpacing: 1.5 }}>PEMERINTAH KABUPATEN {(desa?.kabupaten || '').toUpperCase()}</div>
-          <div style={{ fontSize: 11, letterSpacing: 1.5 }}>KECAMATAN {(desa?.kecamatan || '').toUpperCase()}</div>
-          <div style={{ fontSize: 17, fontWeight: 700, letterSpacing: 2, margin: '2px 0' }}>KANTOR DESA {(desa?.namaDesa || '').toUpperCase()}</div>
-          <div style={{ fontSize: 10, color: '#444' }}>
-            {desa?.alamat} | Kode Pos {desa?.kodePos} | Telp. {desa?.telp}
+          <div style={{ fontSize: 12 }}>PEMERINTAH KABUPATEN {(desa?.kabupaten || '').toUpperCase()}</div>
+          <div style={{ fontSize: 12 }}>KECAMATAN {(desa?.kecamatan || '').toUpperCase()}</div>
+          <div style={{ fontSize: 18, fontWeight: 700, letterSpacing: 2, margin: '2px 0' }}>KUWU {(desa?.namaDesa || '').toUpperCase()}</div>
+          <div style={{ fontSize: 10, color: '#333' }}>
+            {desa?.alamat || ''}{desa?.kodePos ? ` | Kode Pos ${desa.kodePos}` : ''}{desa?.telp ? ` | Telp. ${desa.telp}` : ''}
           </div>
         </div>
       </div>
 
       {/* JUDUL */}
-      <div style={{ textAlign: 'center', margin: '16px 0 6px' }}>
-        <div style={{ fontSize: 14, fontWeight: 700, textDecoration: 'underline', letterSpacing: 2, textTransform: 'uppercase' }}>
-          {tpl?.judul || jenis?.toUpperCase()}
+      <div style={{ textAlign: 'center', margin: '12px 0 6px' }}>
+        <div style={{ fontSize: 13, fontWeight: 700, textDecoration: 'underline', letterSpacing: 2, textTransform: 'uppercase' }}>
+          {tpl?.judul || (jenis || '').toUpperCase()}
         </div>
-        <div style={{ fontSize: 11, marginTop: 2 }}>Nomor : {nomor || '____/____/____/____'}</div>
+        <div style={{ fontSize: 12, marginTop: 3 }}>Nomor : {nomor || '____/ ____- Desa / ____'}</div>
+      </div>
+      <div style={{ borderBottom: '1px solid #000', marginBottom: 14 }} />
+
+      {/* PEMBUKA */}
+      <div style={{ textAlign: 'justify', whiteSpace: 'pre-line', fontSize: 12, marginBottom: 10 }}>
+        {isiBefore || `Yang bertanda tangan dibawah ini, Kuwu Desa ${desa?.namaDesa || ''} Kecamatan ${desa?.kecamatan || ''} Kabupaten ${desa?.kabupaten || ''}, dengan ini menerangkan bahwa :`}
       </div>
 
-      <div style={{ borderBottom: '1px solid #000', marginBottom: 16 }} />
+      {/* TABEL DATA WARGA */}
+      {dataWargaRows.length > 0 && (
+        <table style={{ width: '85%', margin: '4px auto 12px auto', borderCollapse: 'collapse', fontSize: 12 }}>
+          <tbody>
+            {dataWargaRows.map((row, i) => (
+              <tr key={i}>
+                <td style={{ padding: '1px 8px 1px 24px', verticalAlign: 'top', whiteSpace: 'nowrap', width: '38%' }}>{row.label}</td>
+                <td style={{ padding: '1px 6px', verticalAlign: 'top', width: '4%' }}>:</td>
+                <td style={{ padding: '1px 6px', verticalAlign: 'top', fontWeight: row.bold ? 700 : 400, whiteSpace: 'pre-line' }}>{row.value}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
 
-      {/* ISI */}
-      <div style={{ textAlign: 'justify', whiteSpace: 'pre-line', fontSize: 12, marginBottom: 24 }}>
-        {isiRendered}
+      {/* ISI SETELAH DATA WARGA */}
+      {isiAfter ? (
+        <div style={{ textAlign: 'justify', whiteSpace: 'pre-line', fontSize: 12, marginBottom: 10 }}>{isiAfter}</div>
+      ) : keperluan ? (
+        <div style={{ textAlign: 'justify', fontSize: 12, marginBottom: 10 }}>
+          <div>Yang bersangkutan tinggal di wilayah Desa kami Telah memohon Surat Keterangan ini dalam rangka :</div>
+          <div style={{ textAlign: 'center', margin: '8px 0', fontWeight: 600 }}>&ldquo; {keperluan} &rdquo;</div>
+          <div>Surat Keterangan ini kami berikan berdasarkan sepengetahuan dan pertimbangan bahwa :</div>
+          <div style={{ textAlign: 'center', margin: '8px 0', fontWeight: 700 }}>&ldquo; Yang bersangkutan benar warga kami dan {keperluan} &rdquo;</div>
+        </div>
+      ) : null}
+
+      {/* PENUTUP */}
+      <div style={{ textAlign: 'justify', fontSize: 12, marginBottom: 6 }}>
+        {penutupRendered || 'Demikian Surat Keterangan ini kami buat untuk dipergunakan seperlunya.'}
       </div>
 
       {/* TANDA TANGAN */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 32 }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 24 }}>
         <div style={{ textAlign: 'center', minWidth: 220 }}>
-          <div style={{ fontSize: 12 }}>{desa?.namaDesa}, {tanggal || formatTanggal(getTodayStr())}</div>
-          <div style={{ fontSize: 12, whiteSpace: 'pre-line', marginTop: 2 }}>{penutupRendered}</div>
+          <div style={{ fontSize: 12 }}>{desa?.namaDesa || ''}, {tanggal || formatTanggal(getTodayStr())}</div>
+          <div style={{ fontSize: 12, fontWeight: 700, marginTop: 2 }}>KUWU {(desa?.namaDesa || '').toUpperCase()}</div>
           <div style={{ height: 64 }} />
-          <div style={{ fontWeight: 700, fontSize: 12, borderTop: '1px solid #000', paddingTop: 4 }}>
-            {kepalaDesa || desa?.kepalaDesa || '(____________________)'}
+          <div style={{ fontWeight: 700, fontSize: 13, borderBottom: '1px solid #000', paddingBottom: 2, display: 'inline-block', minWidth: 200 }}>
+            {kepalaDesa || desa?.kepalaDesa || 'H. ____________________'}
           </div>
-          <div style={{ fontSize: 11 }}>NIP. {nip || desa?.nip || '-'}</div>
+          {desa?.gelarKepala && <div style={{ fontSize: 11, marginTop: 2 }}>{desa.gelarKepala}</div>}
         </div>
       </div>
     </div>
   );
 }
+
+
 
 export default function FormatSurat() {
   const { state, dispatch } = useApp();
@@ -136,20 +201,17 @@ export default function FormatSurat() {
     if (!isi) return;
     const win = window.open('', '_blank');
     win.document.write(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>${selectedJenis}</title>
-        <style>
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: 'Times New Roman', serif; font-size: 12pt; color: #000; background: #fff; }
-          @page { size: A4; margin: 2cm 2.5cm; }
-          @media print { body { margin: 0; } }
-        </style>
-      </head>
-      <body>${isi}</body>
-      </html>
-    `);
+     <!DOCTYPE html><html><head><title>${selectedJenis || 'Surat'}</title>
+     <style>
+       * { margin: 0; padding: 0; box-sizing: border-box; }
+       body { font-family: 'Times New Roman', serif; font-size: 12pt; color: #000; background: #fff; }
+       @page { size: A4; margin: 1.5cm 2cm; }
+       img { max-width: 70px; max-height: 70px; object-fit: contain; }
+       table { border-collapse: collapse; }
+       @media print { body { margin: 0; } }
+     </style>
+     </head><body>${isi}</body></html>
+   `);
     win.document.close();
     win.focus();
     setTimeout(() => { win.print(); win.close(); }, 400);
