@@ -82,7 +82,7 @@ router.get('/:id', verifyToken, async (req, res) => {
 // POST /api/penduduk
 router.post('/', verifyToken, async (req, res) => {
   try {
-    const { nik, nama, tempat_lahir, tanggal_lahir, jenis_kelamin, agama, pendidikan, pekerjaan, status_kawin, alamat, rt, rw, dusun, status, tanggal_masuk, keterangan } = req.body;
+    const { nik, no_kk, nama, tempat_lahir, tanggal_lahir, jenis_kelamin, agama, pendidikan, pekerjaan, status_kawin, alamat, rt, rw, dusun, status, tanggal_masuk, keterangan } = req.body;
 
     if (!nik || !nama || !tanggal_lahir || !pekerjaan || !rt || !rw)
       return res.status(400).json({ ok: false, msg: 'NIK, nama, tanggal lahir, pekerjaan, RT, RW wajib diisi' });
@@ -93,9 +93,9 @@ router.post('/', verifyToken, async (req, res) => {
     if (exist) return res.status(409).json({ ok: false, msg: 'NIK sudah terdaftar' });
 
     const [result] = await pool.execute(`
-      INSERT INTO penduduk (nik,nama,tempat_lahir,tanggal_lahir,jenis_kelamin,agama,pendidikan,pekerjaan,status_kawin,alamat,rt,rw,dusun,status,tanggal_masuk,keterangan)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-    `, [nik, nama, tempat_lahir, tanggal_lahir, jenis_kelamin, agama, pendidikan, pekerjaan, status_kawin, alamat, rt, rw, dusun, status || 'Tetap', tanggal_masuk, keterangan || '']);
+      INSERT INTO penduduk (nik,no_kk,nama,tempat_lahir,tanggal_lahir,jenis_kelamin,agama,pendidikan,pekerjaan,status_kawin,alamat,rt,rw,dusun,status,tanggal_masuk,keterangan)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    `, [nik, no_kk||'', nama, tempat_lahir, tanggal_lahir, jenis_kelamin, agama, pendidikan, pekerjaan, status_kawin, alamat, rt, rw, dusun, status || 'Tetap', tanggal_masuk, keterangan || '']);
 
     const [[newData]] = await pool.execute('SELECT * FROM penduduk WHERE id = ?', [result.insertId]);
     res.status(201).json({ ok: true, msg: 'Data penduduk berhasil ditambahkan', data: newData });
@@ -107,7 +107,7 @@ router.post('/', verifyToken, async (req, res) => {
 // PUT /api/penduduk/:id
 router.put('/:id', verifyToken, async (req, res) => {
   try {
-    const { nik, nama, tempat_lahir, tanggal_lahir, jenis_kelamin, agama, pendidikan, pekerjaan, status_kawin, alamat, rt, rw, dusun, status, tanggal_masuk, keterangan } = req.body;
+    const { nik, no_kk, nama, tempat_lahir, tanggal_lahir, jenis_kelamin, agama, pendidikan, pekerjaan, status_kawin, alamat, rt, rw, dusun, status, tanggal_masuk, keterangan } = req.body;
 
     const [[exist]] = await pool.execute('SELECT id FROM penduduk WHERE id = ?', [req.params.id]);
     if (!exist) return res.status(404).json({ ok: false, msg: 'Data tidak ditemukan' });
@@ -116,10 +116,10 @@ router.put('/:id', verifyToken, async (req, res) => {
     if (duplikat) return res.status(409).json({ ok: false, msg: 'NIK sudah digunakan penduduk lain' });
 
     await pool.execute(`
-      UPDATE penduduk SET nik=?,nama=?,tempat_lahir=?,tanggal_lahir=?,jenis_kelamin=?,agama=?,
+      UPDATE penduduk SET nik=?,no_kk=?,nama=?,tempat_lahir=?,tanggal_lahir=?,jenis_kelamin=?,agama=?,
       pendidikan=?,pekerjaan=?,status_kawin=?,alamat=?,rt=?,rw=?,dusun=?,status=?,tanggal_masuk=?,keterangan=?
       WHERE id=?
-    `, [nik, nama, tempat_lahir, tanggal_lahir, jenis_kelamin, agama, pendidikan, pekerjaan, status_kawin, alamat, rt, rw, dusun, status, tanggal_masuk, keterangan || '', req.params.id]);
+    `, [nik, no_kk||'', nama, tempat_lahir, tanggal_lahir, jenis_kelamin, agama, pendidikan, pekerjaan, status_kawin, alamat, rt, rw, dusun, status, tanggal_masuk, keterangan || '', req.params.id]);
 
     const [[updated]] = await pool.execute('SELECT * FROM penduduk WHERE id = ?', [req.params.id]);
     res.json({ ok: true, msg: 'Data penduduk berhasil diperbarui', data: updated });

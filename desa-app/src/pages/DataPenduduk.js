@@ -14,7 +14,7 @@ const JENIS_RIWAYAT= ['Kelahiran','Kematian','Pindah Masuk','Pindah Keluar'];
 const DUSUN_COLORS = ['#1B5EA0','#534AB7','#2D6A0F','#A0621B','#C0392B'];
 
 const formAwal = {
-  nik:'', nama:'', tempatLahir:'', tanggalLahir:'',
+  nik:'', no_kk:'', nama:'', tempatLahir:'', tanggalLahir:'',
   jenisKelamin:'Laki-laki', agama:'Islam', pendidikan:'SMA',
   pekerjaan:'', statusKawin:'Belum Kawin', alamat:'',
   rt: WILAYAH['Dusun 1'].rtList[0],
@@ -39,6 +39,7 @@ export default function DataPenduduk() {
   const [error, setError]           = useState('');
   const [importData, setImportData] = useState([]);
   const [importing, setImporting]   = useState(false);
+  const [groupByKK, setGroupByKK]   = useState(false);
   const importRef = useRef();
 
   // ── SORT & FILTER ─────────────────────────────────────────
@@ -46,6 +47,8 @@ export default function DataPenduduk() {
     const da = DUSUN_LIST.indexOf(a.dusun), db = DUSUN_LIST.indexOf(b.dusun);
     if (da!==db) return da-db;
     if (parseInt(a.rt)!==parseInt(b.rt)) return parseInt(a.rt)-parseInt(b.rt);
+    // Kelompokkan berdasarkan no_kk jika ada
+    if (a.no_kk && b.no_kk && a.no_kk !== b.no_kk) return a.no_kk.localeCompare(b.no_kk);
     return a.nama.localeCompare(b.nama);
   });
 
@@ -53,7 +56,7 @@ export default function DataPenduduk() {
 
   const filtered = sorted.filter(p => {
     const q = search.toLowerCase();
-    const cocok = !q || p.nama.toLowerCase().includes(q) || p.nik.includes(q) || p.pekerjaan.toLowerCase().includes(q) || p.rt.includes(q);
+    const cocok = !q || p.nama.toLowerCase().includes(q) || p.nik.includes(q) || p.pekerjaan.toLowerCase().includes(q) || p.rt.includes(q) || (p.no_kk||'').includes(q);
     const dusunOk = filterDusun ? p.dusun===filterDusun : true;
     return cocok && dusunOk;
   });
@@ -134,6 +137,7 @@ export default function DataPenduduk() {
       const dataExport = state.penduduk.map((p,i) => ({
         'No':              i+1,
         'NIK':             p.nik,
+        'No. KK':          p.no_kk||'',
         'Nama Lengkap':    p.nama,
         'Tempat Lahir':    p.tempatLahir,
         'Tanggal Lahir':   p.tanggalLahir,
@@ -152,10 +156,8 @@ export default function DataPenduduk() {
       }));
 
       const ws = XLSX.utils.json_to_sheet(dataExport);
-
-      // Lebar kolom
       ws['!cols'] = [
-        {wch:4},{wch:18},{wch:22},{wch:14},{wch:14},{wch:13},
+        {wch:4},{wch:18},{wch:18},{wch:22},{wch:14},{wch:14},{wch:13},
         {wch:10},{wch:12},{wch:18},{wch:14},{wch:22},
         {wch:6},{wch:6},{wch:10},{wch:12},{wch:14},{wch:20},
       ];
@@ -163,12 +165,11 @@ export default function DataPenduduk() {
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'Data Penduduk');
 
-      // Sheet per dusun
       DUSUN_LIST.forEach(d => {
         const dData = state.penduduk
           .filter(p=>p.dusun===d)
           .map((p,i) => ({
-            'No': i+1, 'NIK': p.nik, 'Nama': p.nama,
+            'No': i+1, 'NIK': p.nik, 'No. KK': p.no_kk||'', 'Nama': p.nama,
             'TTL': `${p.tempatLahir}, ${p.tanggalLahir}`,
             'Jenis Kelamin': p.jenisKelamin, 'Pekerjaan': p.pekerjaan,
             'RT': p.rt, 'RW': p.rw, 'Status': p.status,
@@ -193,6 +194,7 @@ export default function DataPenduduk() {
   const exportTemplate = () => {
     const template = [{
       'NIK':'3209010101900001',
+      'No. KK':'3209010101900000',
       'Nama Lengkap':'Contoh Nama',
       'Tempat Lahir':'Cirebon',
       'Tanggal Lahir':'1990-01-01',
@@ -210,7 +212,7 @@ export default function DataPenduduk() {
       'Keterangan':'',
     }];
     const ws = XLSX.utils.json_to_sheet(template);
-    ws['!cols'] = Array(16).fill({wch:16});
+    ws['!cols'] = Array(17).fill({wch:16});
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Template');
     const buf = XLSX.write(wb, { bookType:'xlsx', type:'array' });
@@ -251,6 +253,7 @@ export default function DataPenduduk() {
       try {
         await dispatch({ type:'TAMBAH_PENDUDUK', payload:{
           nik:            String(row['NIK']||'').trim(),
+          no_kk:          String(row['No. KK']||'').trim(),
           nama:           String(row['Nama Lengkap']||'').trim(),
           tempatLahir:    String(row['Tempat Lahir']||'').trim(),
           tanggalLahir:   String(row['Tanggal Lahir']||'').trim(),
@@ -289,50 +292,119 @@ export default function DataPenduduk() {
   ];
 
   // ── TABEL PENDUDUK ────────────────────────────────────────
-  const TabelPenduduk = ({ list }) => (
-    <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13, minWidth:580 }}>
-      <thead>
-        <tr style={{ background:'#F8FAFC' }}>
-          {['No','NIK','Nama Lengkap','Umur/TTL','Pekerjaan','RT/RW','Status','Aksi'].map((h,i)=>(
-            <th key={i} style={{ textAlign:'left', padding:'9px 12px', fontSize:11, fontWeight:700, color:'#4A5568', borderBottom:'1px solid #E2E8F0', whiteSpace:'nowrap' }}>{h}</th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {list.map((p,idx)=>(
-          <tr key={p.id} style={{ borderBottom:'1px solid #F1F5F9' }}
-            onMouseEnter={e=>e.currentTarget.style.background='#FAFBFC'}
-            onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-            <td style={{ padding:'9px 12px', color:'#A0AEC0', fontSize:12, fontWeight:600 }}>{idx+1}</td>
-            <td style={{ padding:'9px 12px', fontFamily:'monospace', fontSize:11, color:'#718096' }}>{p.nik}</td>
-            <td style={{ padding:'9px 12px' }}>
-              <div style={{ fontWeight:700, fontSize:13 }}>{p.nama}</div>
-              <div style={{ fontSize:11, color:'#A0AEC0' }}>{p.agama}</div>
-            </td>
-            <td style={{ padding:'9px 12px' }}>
-              <div style={{ fontWeight:600, fontSize:13 }}>{hitungUmur(p.tanggalLahir)} th</div>
-              <div style={{ fontSize:11, color:'#718096' }}>{p.tempatLahir}</div>
-            </td>
-            <td style={{ padding:'9px 12px', fontSize:13, color:'#4A5568' }}>{p.pekerjaan}</td>
-            <td style={{ padding:'9px 12px', fontSize:12 }}>
-              <div style={{ fontWeight:600 }}>RT {p.rt}</div>
-              <div style={{ color:'#718096' }}>RW {p.rw}</div>
-            </td>
-            <td style={{ padding:'9px 12px' }}>
-              <Badge type={p.status==='Baru'?'warning':'success'}>{p.status}</Badge>
-            </td>
-            <td style={{ padding:'9px 12px', whiteSpace:'nowrap' }}>
-              <div style={{ display:'flex', gap:4 }}>
-                <Btn onClick={()=>setShowDetail(p)} size="sm" style={{ fontSize:11, padding:'4px 8px' }}>👁</Btn>
-                <Btn onClick={()=>bukaEdit(p)} variant="soft" size="sm" style={{ fontSize:11, padding:'4px 8px' }}>✏</Btn>
-                <Btn onClick={()=>hapus(p.id)} variant="danger" size="sm" style={{ fontSize:11, padding:'4px 8px' }}>🗑</Btn>
+  const TabelPenduduk = ({ list }) => {
+    // Kelompokkan per KK jika groupByKK aktif
+    if (groupByKK) {
+      const kkGroups = {};
+      list.forEach(p => {
+        const kk = p.no_kk || 'Tanpa KK';
+        if (!kkGroups[kk]) kkGroups[kk] = [];
+        kkGroups[kk].push(p);
+      });
+
+      return (
+        <div>
+          {Object.entries(kkGroups).map(([kk, members]) => (
+            <div key={kk} style={{ marginBottom: 8 }}>
+              {/* Header KK */}
+              <div style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 12px', background:'#EBF3FC', borderBottom:'1px solid #B5D4F4' }}>
+                <span style={{ fontSize:13, fontWeight:700, color:'#1B5EA0' }}>🏠 No. KK: {kk}</span>
+                <span style={{ fontSize:11, color:'#718096' }}>— {members.length} anggota</span>
               </div>
-            </td>
+              <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13, minWidth:580 }}>
+                <thead>
+                  <tr style={{ background:'#F8FAFC' }}>
+                    {['No','NIK','Nama Lengkap','Umur/TTL','Pekerjaan','RT/RW','Status','Aksi'].map((h,i)=>(
+                      <th key={i} style={{ textAlign:'left', padding:'9px 12px', fontSize:11, fontWeight:700, color:'#4A5568', borderBottom:'1px solid #E2E8F0', whiteSpace:'nowrap' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {members.map((p,idx)=>(
+                    <tr key={p.id} style={{ borderBottom:'1px solid #F1F5F9' }}
+                      onMouseEnter={e=>e.currentTarget.style.background='#FAFBFC'}
+                      onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                      <td style={{ padding:'9px 12px', color:'#A0AEC0', fontSize:12, fontWeight:600 }}>{idx+1}</td>
+                      <td style={{ padding:'9px 12px', fontFamily:'monospace', fontSize:11, color:'#718096' }}>{p.nik}</td>
+                      <td style={{ padding:'9px 12px' }}>
+                        <div style={{ fontWeight:700, fontSize:13 }}>{p.nama}</div>
+                        <div style={{ fontSize:11, color:'#A0AEC0' }}>{p.agama}</div>
+                      </td>
+                      <td style={{ padding:'9px 12px' }}>
+                        <div style={{ fontWeight:600, fontSize:13 }}>{hitungUmur(p.tanggalLahir)} th</div>
+                        <div style={{ fontSize:11, color:'#718096' }}>{p.tempatLahir}</div>
+                      </td>
+                      <td style={{ padding:'9px 12px', fontSize:13, color:'#4A5568' }}>{p.pekerjaan}</td>
+                      <td style={{ padding:'9px 12px', fontSize:12 }}>
+                        <div style={{ fontWeight:600 }}>RT {p.rt}</div>
+                        <div style={{ color:'#718096' }}>RW {p.rw}</div>
+                      </td>
+                      <td style={{ padding:'9px 12px' }}>
+                        <Badge type={p.status==='Baru'?'warning':'success'}>{p.status}</Badge>
+                      </td>
+                      <td style={{ padding:'9px 12px', whiteSpace:'nowrap' }}>
+                        <div style={{ display:'flex', gap:4 }}>
+                          <Btn onClick={()=>setShowDetail(p)} size="sm" style={{ fontSize:11, padding:'4px 8px' }}>👁</Btn>
+                          <Btn onClick={()=>bukaEdit(p)} variant="soft" size="sm" style={{ fontSize:11, padding:'4px 8px' }}>✏</Btn>
+                          <Btn onClick={()=>hapus(p.id)} variant="danger" size="sm" style={{ fontSize:11, padding:'4px 8px' }}>🗑</Btn>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    return (
+      <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13, minWidth:580 }}>
+        <thead>
+          <tr style={{ background:'#F8FAFC' }}>
+            {['No','NIK','No. KK','Nama Lengkap','Umur/TTL','Pekerjaan','RT/RW','Status','Aksi'].map((h,i)=>(
+              <th key={i} style={{ textAlign:'left', padding:'9px 12px', fontSize:11, fontWeight:700, color:'#4A5568', borderBottom:'1px solid #E2E8F0', whiteSpace:'nowrap' }}>{h}</th>
+            ))}
           </tr>
-        ))}
-      </tbody>
-    </table>
-  );
+        </thead>
+        <tbody>
+          {list.map((p,idx)=>(
+            <tr key={p.id} style={{ borderBottom:'1px solid #F1F5F9' }}
+              onMouseEnter={e=>e.currentTarget.style.background='#FAFBFC'}
+              onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+              <td style={{ padding:'9px 12px', color:'#A0AEC0', fontSize:12, fontWeight:600 }}>{idx+1}</td>
+              <td style={{ padding:'9px 12px', fontFamily:'monospace', fontSize:11, color:'#718096' }}>{p.nik}</td>
+              <td style={{ padding:'9px 12px', fontFamily:'monospace', fontSize:11, color:'#718096' }}>{p.no_kk||'-'}</td>
+              <td style={{ padding:'9px 12px' }}>
+                <div style={{ fontWeight:700, fontSize:13 }}>{p.nama}</div>
+                <div style={{ fontSize:11, color:'#A0AEC0' }}>{p.agama}</div>
+              </td>
+              <td style={{ padding:'9px 12px' }}>
+                <div style={{ fontWeight:600, fontSize:13 }}>{hitungUmur(p.tanggalLahir)} th</div>
+                <div style={{ fontSize:11, color:'#718096' }}>{p.tempatLahir}</div>
+              </td>
+              <td style={{ padding:'9px 12px', fontSize:13, color:'#4A5568' }}>{p.pekerjaan}</td>
+              <td style={{ padding:'9px 12px', fontSize:12 }}>
+                <div style={{ fontWeight:600 }}>RT {p.rt}</div>
+                <div style={{ color:'#718096' }}>RW {p.rw}</div>
+              </td>
+              <td style={{ padding:'9px 12px' }}>
+                <Badge type={p.status==='Baru'?'warning':'success'}>{p.status}</Badge>
+              </td>
+              <td style={{ padding:'9px 12px', whiteSpace:'nowrap' }}>
+                <div style={{ display:'flex', gap:4 }}>
+                  <Btn onClick={()=>setShowDetail(p)} size="sm" style={{ fontSize:11, padding:'4px 8px' }}>👁</Btn>
+                  <Btn onClick={()=>bukaEdit(p)} variant="soft" size="sm" style={{ fontSize:11, padding:'4px 8px' }}>✏</Btn>
+                  <Btn onClick={()=>hapus(p.id)} variant="danger" size="sm" style={{ fontSize:11, padding:'4px 8px' }}>🗑</Btn>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    );
+  };
 
   return (
     <div className="page-container">
@@ -358,7 +430,7 @@ export default function DataPenduduk() {
           <div style={{ position:'relative', marginBottom:12 }}>
             <span style={{ position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', fontSize:16, color:'#A0AEC0' }}>🔍</span>
             <input value={search} onChange={e=>{ setSearch(e.target.value); if(e.target.value.trim()) expandAll(); }}
-              placeholder="Cari nama, NIK, pekerjaan, atau nomor RT..."
+              placeholder="Cari nama, NIK, No. KK, pekerjaan, atau nomor RT..."
               style={{ width:'100%', border:'1.5px solid #CBD5E1', borderRadius:10, padding:'11px 16px 11px 44px', fontSize:14, fontFamily:'inherit', background:'#fff', outline:'none', boxSizing:'border-box' }}
               onFocus={e=>e.target.style.borderColor='#1B5EA0'}
               onBlur={e=>e.target.style.borderColor='#CBD5E1'} />
@@ -386,6 +458,12 @@ export default function DataPenduduk() {
                 <Btn onClick={collapseAll} variant="ghost" size="sm">📁 Tutup</Btn>
               </div>
             )}
+
+            {/* Toggle Kelompok KK */}
+            <button onClick={()=>setGroupByKK(!groupByKK)}
+              style={{ padding:'8px 14px', fontSize:12, borderRadius:10, border:`1.5px solid ${groupByKK?'#1B5EA0':'#CBD5E1'}`, background:groupByKK?'#EBF3FC':'#fff', color:groupByKK?'#1B5EA0':'#718096', cursor:'pointer', fontFamily:'inherit', fontWeight:groupByKK?700:400 }}>
+              🏠 {groupByKK ? 'Kelompok KK ✓' : 'Kelompok KK'}
+            </button>
 
             {/* Export & Import */}
             <div style={{ display:'flex', gap:6, marginLeft:'auto' }}>
@@ -569,6 +647,7 @@ export default function DataPenduduk() {
       <Modal show={showModal} onClose={()=>setShowModal(false)} title={editData?'✏ Edit Data Penduduk':'➕ Tambah Penduduk Baru'} width={620}>
         {error && <Alert type="danger">{error}</Alert>}
         <Input label="NIK (16 digit)" required value={form.nik} onChange={e=>setForm({...form,nik:e.target.value})} placeholder="3209XXXXXXXXXXXX" maxLength={16} />
+        <Input label="No. KK (16 digit)" value={form.no_kk||''} onChange={e=>setForm({...form,no_kk:e.target.value})} placeholder="Nomor Kartu Keluarga" maxLength={16} />
         <Input label="Nama Lengkap" required value={form.nama} onChange={e=>setForm({...form,nama:e.target.value})} placeholder="Nama sesuai KTP" />
         <div className="form-row">
           <Input label="Tempat Lahir" value={form.tempatLahir} onChange={e=>setForm({...form,tempatLahir:e.target.value})} placeholder="Kota lahir" />
@@ -627,7 +706,7 @@ export default function DataPenduduk() {
             <table style={{ width:'100%', borderCollapse:'collapse', fontSize:12, minWidth:400 }}>
               <thead>
                 <tr style={{ background:'#F8FAFC' }}>
-                  {['NIK','Nama','Dusun','RT','Pekerjaan'].map((h,i)=>(
+                  {['NIK','No. KK','Nama','Dusun','RT','Pekerjaan'].map((h,i)=>(
                     <th key={i} style={{ textAlign:'left', padding:'7px 10px', fontSize:11, fontWeight:700, color:'#4A5568', borderBottom:'1px solid #E2E8F0' }}>{h}</th>
                   ))}
                 </tr>
@@ -636,6 +715,7 @@ export default function DataPenduduk() {
                 {importData.slice(0,5).map((r,i)=>(
                   <tr key={i} style={{ borderBottom:'1px solid #F1F5F9' }}>
                     <td style={{ padding:'7px 10px', fontFamily:'monospace', fontSize:11 }}>{r['NIK']}</td>
+                    <td style={{ padding:'7px 10px', fontFamily:'monospace', fontSize:11 }}>{r['No. KK']||'-'}</td>
                     <td style={{ padding:'7px 10px', fontWeight:600 }}>{r['Nama Lengkap']}</td>
                     <td style={{ padding:'7px 10px' }}>{r['Dusun']}</td>
                     <td style={{ padding:'7px 10px' }}>{r['RT']}</td>
@@ -643,7 +723,7 @@ export default function DataPenduduk() {
                   </tr>
                 ))}
                 {importData.length>5 && (
-                  <tr><td colSpan={5} style={{ padding:'7px 10px', color:'#718096', fontSize:12, textAlign:'center' }}>...dan {importData.length-5} data lainnya</td></tr>
+                  <tr><td colSpan={6} style={{ padding:'7px 10px', color:'#718096', fontSize:12, textAlign:'center' }}>...dan {importData.length-5} data lainnya</td></tr>
                 )}
               </tbody>
             </table>
@@ -687,6 +767,8 @@ export default function DataPenduduk() {
               </div>
             </div>
             {[
+              ['🪪 NIK',          showDetail.nik],
+              ['🏠 No. KK',       showDetail.no_kk||'-'],
               ['📅 TTL',         `${showDetail.tempatLahir}, ${formatTanggal(showDetail.tanggalLahir)}`],
               ['⚤ Jenis Kelamin', showDetail.jenisKelamin],
               ['🕌 Agama',        showDetail.agama],

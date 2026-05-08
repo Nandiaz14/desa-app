@@ -58,6 +58,7 @@ async function initDatabase() {
       CREATE TABLE IF NOT EXISTS penduduk (
         id            INT AUTO_INCREMENT PRIMARY KEY,
         nik           VARCHAR(16) UNIQUE NOT NULL,
+        no_kk         VARCHAR(16),
         nama          VARCHAR(100) NOT NULL,
         tempat_lahir  VARCHAR(100),
         tanggal_lahir DATE,
@@ -124,6 +125,12 @@ async function initDatabase() {
     `);
 
     console.log('✅ Semua tabel berhasil dibuat');
+
+    // Tambah kolom no_kk jika belum ada (untuk database yang sudah ada)
+    try {
+      await conn.execute('ALTER TABLE penduduk ADD COLUMN no_kk VARCHAR(16) AFTER nik');
+      console.log('✅ Kolom no_kk berhasil ditambahkan');
+    } catch(e) { /* kolom sudah ada, skip */ }
 
     // ── HANYA BUAT ADMIN DEFAULT JIKA BELUM ADA ─────────────
     const [adminExist] = await conn.execute('SELECT id FROM users WHERE username = ?', ['admin']);
