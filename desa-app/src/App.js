@@ -9,13 +9,18 @@ import SuratMenyurat from './pages/SuratMenyurat';
 import ManajemenUser from './pages/ManajemenUser';
 import './index.css';
 
-const NAV_BASE = [
-  { id:'dashboard', label:'Beranda',       emoji:'🏠', desc:'Ringkasan data' },
-  { id:'penduduk',  label:'Data Penduduk', emoji:'👥', desc:'Kelola warga desa' },
-  { id:'surat',     label:'Surat & Arsip', emoji:'📋', desc:'Pengajuan & format surat' },
-];
+// ── NAVIGASI BERDASARKAN ROLE ─────────────────────────────
 const NAV_ADMIN = [
-  { id:'users', label:'Kelola Pengguna', emoji:'🔐', desc:'Manajemen akun' },
+  { id:'dashboard', label:'Beranda',        emoji:'🏠', desc:'Ringkasan data' },
+  { id:'penduduk',  label:'Data Penduduk',  emoji:'👥', desc:'Lihat data warga desa' },
+  { id:'arsip',     label:'Arsip Surat',    emoji:'🗂',  desc:'Laporan & arsip surat' },
+  { id:'users',     label:'Kelola Pengguna',emoji:'🔐', desc:'Manajemen akun' },
+];
+
+const NAV_USER = [
+  { id:'dashboard', label:'Beranda',        emoji:'🏠', desc:'Ringkasan data' },
+  { id:'penduduk',  label:'Data Penduduk',  emoji:'👥', desc:'Kelola warga desa' },
+  { id:'surat',     label:'Surat & Arsip',  emoji:'📋', desc:'Pengajuan & format surat' },
 ];
 
 function AppInner() {
@@ -29,9 +34,9 @@ function AppInner() {
 
   const desa          = state.pengaturanDesa || {};
   const suratMenunggu = state.pengajuanSurat.filter(s => s.status==='Menunggu').length;
-  const NAV           = isKepala ? [...NAV_BASE, ...NAV_ADMIN] : NAV_BASE;
-  const roleIcon      = currentUser?.role==='kepala_desa' ? '🏛' : '👤';
-  const roleLabel     = currentUser?.role==='kepala_desa' ? 'Kepala Desa' : 'Perangkat Desa';
+  const NAV           = isKepala ? NAV_ADMIN : NAV_USER;
+  const roleIcon      = isKepala ? '🏛' : '👤';
+  const roleLabel     = isKepala ? 'Kepala Desa' : 'Perangkat Desa';
 
   useEffect(() => {
     const handleResize = () => {
@@ -42,6 +47,12 @@ function AppInner() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Reset halaman jika tidak ada akses
+  useEffect(() => {
+    const validPages = NAV.map(n => n.id);
+    if (!validPages.includes(page)) setPage('dashboard');
+  }, [isKepala]);
 
   const navigateTo = (id) => {
     setPage(id);
@@ -61,11 +72,16 @@ function AppInner() {
     toast.success('Data berhasil dimuat ulang!');
   };
 
-  const pages = {
+  // ── HALAMAN BERDASARKAN ROLE ──────────────────────────────
+  const pages = isKepala ? {
     dashboard: <Dashboard onNav={navigateTo} />,
-    penduduk:  <DataPenduduk />,
-    surat:     <SuratMenyurat />,
+    penduduk:  <DataPenduduk readOnly={true} />,
+    arsip:     <SuratMenyurat adminMode={true} />,
     users:     <ManajemenUser />,
+  } : {
+    dashboard: <Dashboard onNav={navigateTo} />,
+    penduduk:  <DataPenduduk readOnly={false} />,
+    surat:     <SuratMenyurat adminMode={false} />,
   };
 
   // ── LOADING ───────────────────────────────────────────────
@@ -145,7 +161,7 @@ function AppInner() {
                   <div style={{ minWidth:0 }}>
                     <div style={{ fontWeight:700, fontSize:14, color:'#1A2332', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{currentUser?.nama}</div>
                     <div style={{ fontSize:11, color:'#4A5568' }}>{currentUser?.jabatan}</div>
-                    <span style={{ fontSize:10, background:'#1B5EA0', color:'#fff', padding:'1px 7px', borderRadius:8, fontWeight:600 }}>{roleLabel}</span>
+                    <span style={{ fontSize:10, background: isKepala ? '#1B5EA0' : '#2D6A0F', color:'#fff', padding:'1px 7px', borderRadius:8, fontWeight:600 }}>{roleLabel}</span>
                   </div>
                 </div>
               </div>
@@ -187,11 +203,16 @@ function AppInner() {
         <aside className={`sidebar ${isMobile ? (sidebarOpen?'open':'') : 'open'}`}
           style={{ transform: isMobile && !sidebarOpen ? 'translateX(-100%)' : 'translateX(0)' }}>
 
+          {/* Badge role di sidebar */}
+          <div style={{ margin:'0 12px 12px', padding:'8px 12px', background: isKepala ? '#EBF3FC' : '#EAF3DE', borderRadius:8, border:`1px solid ${isKepala ? '#B5D4F4' : '#A8D5A2'}`, fontSize:11, fontWeight:700, color: isKepala ? '#1B5EA0' : '#2D6A0F', textAlign:'center' }}>
+            {isKepala ? '🏛 Mode Kepala Desa' : '👤 Mode Perangkat Desa'}
+          </div>
+
           <div style={{ padding:'0 14px 8px', fontSize:11, fontWeight:700, color:'#A0AEC0', textTransform:'uppercase', letterSpacing:1 }}>Menu Utama</div>
 
           {NAV.map(n => {
             const active = page===n.id;
-            const badge  = n.id==='surat' && suratMenunggu>0 ? suratMenunggu : null;
+            const badge  = (n.id==='surat' || n.id==='arsip') && suratMenunggu>0 ? suratMenunggu : null;
             return (
               <button key={n.id} onClick={()=>navigateTo(n.id)}
                 style={{ display:'flex', alignItems:'center', gap:10, width:'100%', margin:'2px 0', padding:'11px 16px', background:active?'linear-gradient(135deg,#EBF3FC,#DBEAFE)':'transparent', border:'none', textAlign:'left', cursor:'pointer', borderLeft:active?'4px solid #1B5EA0':'4px solid transparent', transition:'all 0.15s' }}

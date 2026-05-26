@@ -51,12 +51,6 @@ function renderIsi(tpl, warga, keperluan, desa, nomor, tanggal) {
     .replace(/\[TANGGAL\]/g,    tanggal||formatTanggal(getTodayStr()));
 }
 
-// ══════════════════════════════════════════════════════════════
-// GANTI fungsi SuratResmi di FormatSurat.js dan SuratMenyurat.js
-// Cari: function SuratResmi({ ... sampai kurung tutup }
-// Ganti dengan kode di bawah ini
-// ══════════════════════════════════════════════════════════════
-
 function SuratResmi({ tpl, jenis, warga, keperluan, desa, nomor, tanggal, kepalaDesa, nip }) {
   const isiParts = (tpl?.isi || '').split('[DATA_WARGA]');
   const isiBefore = renderIsi(isiParts[0] || '', null, keperluan, desa, nomor, tanggal);
@@ -76,49 +70,27 @@ function SuratResmi({ tpl, jenis, warga, keperluan, desa, nomor, tanggal, kepala
   ] : [];
 
   return (
-    <div style={{
-      fontFamily: 'Times New Roman, serif',
-      fontSize: 12,
-      lineHeight: 1.7,
-      color: '#000',
-      background: '#fff',
-      padding: '20px 48px 24px 48px',
-      width: '100%',
-      boxSizing: 'border-box',
-    }}>
-
+    <div style={{ fontFamily: 'Times New Roman, serif', fontSize: 12, lineHeight: 1.7, color: '#000', background: '#fff', padding: '20px 48px 24px 48px', width: '100%', boxSizing: 'border-box' }}>
       {/* KOP SURAT */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, paddingBottom: 10, borderBottom: '4px solid #000', marginBottom: 16 }}>
-        <img
-          src="/logo-cirebon.jpeg"
-          alt="Logo"
-          style={{ width: 70, height: 70, objectFit: 'contain', flexShrink: 0 }}
-          onError={e => { e.target.style.display = 'none'; }}
-        />
+        <img src="/logo-cirebon.jpeg" alt="Logo" style={{ width: 70, height: 70, objectFit: 'contain', flexShrink: 0 }} onError={e => { e.target.style.display = 'none'; }} />
         <div style={{ flex: 1, textAlign: 'center' }}>
           <div style={{ fontSize: 12 }}>PEMERINTAH KABUPATEN {(desa?.kabupaten || '').toUpperCase()}</div>
           <div style={{ fontSize: 12 }}>KECAMATAN {(desa?.kecamatan || '').toUpperCase()}</div>
           <div style={{ fontSize: 18, fontWeight: 700, letterSpacing: 2, margin: '2px 0' }}>KUWU {(desa?.namaDesa || '').toUpperCase()}</div>
-          <div style={{ fontSize: 10, color: '#333' }}>
-            {desa?.alamat || ''}{desa?.kodePos ? ` | Kode Pos ${desa.kodePos}` : ''}{desa?.telp ? ` | Telp. ${desa.telp}` : ''}
-          </div>
+          <div style={{ fontSize: 10, color: '#333' }}>{desa?.alamat || ''}{desa?.kodePos ? ` | Kode Pos ${desa.kodePos}` : ''}{desa?.telp ? ` | Telp. ${desa.telp}` : ''}</div>
         </div>
       </div>
-
       {/* JUDUL */}
       <div style={{ textAlign: 'center', margin: '12px 0 6px' }}>
-        <div style={{ fontSize: 13, fontWeight: 700, textDecoration: 'underline', letterSpacing: 2, textTransform: 'uppercase' }}>
-          {tpl?.judul || (jenis || '').toUpperCase()}
-        </div>
+        <div style={{ fontSize: 13, fontWeight: 700, textDecoration: 'underline', letterSpacing: 2, textTransform: 'uppercase' }}>{tpl?.judul || (jenis || '').toUpperCase()}</div>
         <div style={{ fontSize: 12, marginTop: 3 }}>Nomor : {nomor || '____/ ____- Desa / ____'}</div>
       </div>
       <div style={{ borderBottom: '1px solid #000', marginBottom: 14 }} />
-
       {/* PEMBUKA */}
       <div style={{ textAlign: 'justify', whiteSpace: 'pre-line', fontSize: 12, marginBottom: 10 }}>
         {isiBefore || `Yang bertanda tangan dibawah ini, Kuwu Desa ${desa?.namaDesa || ''} Kecamatan ${desa?.kecamatan || ''} Kabupaten ${desa?.kabupaten || ''}, dengan ini menerangkan bahwa :`}
       </div>
-
       {/* TABEL DATA WARGA */}
       {dataWargaRows.length > 0 && (
         <table style={{ width: '85%', margin: '4px auto 12px auto', borderCollapse: 'collapse', fontSize: 12 }}>
@@ -133,7 +105,6 @@ function SuratResmi({ tpl, jenis, warga, keperluan, desa, nomor, tanggal, kepala
           </tbody>
         </table>
       )}
-
       {/* ISI SETELAH DATA WARGA */}
       {isiAfter ? (
         <div style={{ textAlign: 'justify', whiteSpace: 'pre-line', fontSize: 12, marginBottom: 10 }}>{isiAfter}</div>
@@ -145,21 +116,15 @@ function SuratResmi({ tpl, jenis, warga, keperluan, desa, nomor, tanggal, kepala
           <div style={{ textAlign: 'center', margin: '8px 0', fontWeight: 700 }}>&ldquo; Yang bersangkutan benar warga kami dan {keperluan} &rdquo;</div>
         </div>
       ) : null}
-
       {/* PENUTUP */}
-      <div style={{ textAlign: 'justify', fontSize: 12, marginBottom: 6 }}>
-        {penutupRendered || 'Demikian Surat Keterangan ini kami buat untuk dipergunakan seperlunya.'}
-      </div>
-
+      <div style={{ textAlign: 'justify', fontSize: 12, marginBottom: 6 }}>{penutupRendered || 'Demikian Surat Keterangan ini kami buat untuk dipergunakan seperlunya.'}</div>
       {/* TANDA TANGAN */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 24 }}>
         <div style={{ textAlign: 'center', minWidth: 220 }}>
           <div style={{ fontSize: 12 }}>{desa?.namaDesa || ''}, {tanggal || formatTanggal(getTodayStr())}</div>
           <div style={{ fontSize: 12, fontWeight: 700, marginTop: 2 }}>KUWU {(desa?.namaDesa || '').toUpperCase()}</div>
           <div style={{ height: 64 }} />
-          <div style={{ fontWeight: 700, fontSize: 13, borderBottom: '1px solid #000', paddingBottom: 2, display: 'inline-block', minWidth: 200 }}>
-            {kepalaDesa || desa?.kepalaDesa || 'H. ____________________'}
-          </div>
+          <div style={{ fontWeight: 700, fontSize: 13, borderBottom: '1px solid #000', paddingBottom: 2, display: 'inline-block', minWidth: 200 }}>{kepalaDesa || desa?.kepalaDesa || 'H. ____________________'}</div>
           {desa?.gelarKepala && <div style={{ fontSize: 11, marginTop: 2 }}>{desa.gelarKepala}</div>}
         </div>
       </div>
@@ -167,16 +132,16 @@ function SuratResmi({ tpl, jenis, warga, keperluan, desa, nomor, tanggal, kepala
   );
 }
 
-export default function SuratMenyurat() {
+export default function SuratMenyurat({ adminMode = false }) {
   const { state, dispatch } = useApp();
-  const { currentUser }     = useAuth(); // ← ambil user yang sedang login
+  const { currentUser }     = useAuth();
   const printRef = useRef();
 
-  // Nama petugas otomatis dari akun yang login
   const namaPetugasLogin = currentUser?.nama || '';
   const jabatanLogin     = currentUser?.jabatan || '';
 
-  const [tab, setTab] = useState('pengajuan');
+  // Admin hanya lihat tab arsip, user lihat semua
+  const [tab, setTab] = useState(adminMode ? 'arsip' : 'pengajuan');
 
   const [showModalAjuan,   setShowModalAjuan]   = useState(false);
   const [showModalUpdate,  setShowModalUpdate]  = useState(null);
@@ -193,13 +158,10 @@ export default function SuratMenyurat() {
     nik:'', namaPemohon:'', jenisSurat: JENIS_SURAT[0],
     keperluan:'', tanggalAjuan: getTodayStr(), catatan:''
   });
-
-  // formUpdate: petugas otomatis diisi nama yang login
   const [formUpdate,     setFormUpdate]     = useState({});
   const [formArsip,      setFormArsip]      = useState({
     nomorSurat:'', tanggal: getTodayStr(), jenis: JENIS_SURAT[0],
-    penerima:'', nik:'', keperluan:'',
-    dibuat: namaPetugasLogin, // ← otomatis nama yang login
+    penerima:'', nik:'', keperluan:'', dibuat: namaPetugasLogin,
   });
   const [formPengaturan, setFormPengaturan] = useState({});
   const [formTemplate,   setFormTemplate]   = useState({});
@@ -232,12 +194,11 @@ export default function SuratMenyurat() {
     return `${prefix}/${tahun}/${urut}`;
   };
 
-  // ── PRINT ─────────────────────────────────────────────────
   const handlePrint = () => {
     const isi = printRef.current?.innerHTML;
     if (!isi) return;
     const win = window.open('', '_blank');
-     win.document.write(`
+    win.document.write(`
       <!DOCTYPE html><html><head><title>Surat</title>
       <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -254,119 +215,87 @@ export default function SuratMenyurat() {
     setTimeout(() => { win.print(); win.close(); }, 500);
   };
 
-  // ── SIMPAN PENGAJUAN ──────────────────────────────────────
-  function simpanAjuan() {
-      if (!formAjuan.nik || !formAjuan.namaPemohon || !formAjuan.keperluan) {
-        setError('NIK, Nama Pemohon, dan Keperluan wajib diisi.'); return;
-      }
-      const nomor = `S-${new Date().getFullYear()}-${String(state.pengajuanSurat.length + 1).padStart(3, '0')}`;
-      dispatch({
-        type: 'TAMBAH_PENGAJUAN',
-        payload: {
-          ...formAjuan,
-          nomorAntrian: nomor,
-          status: 'Menunggu',
-          tanggalSelesai: '',
-          petugas: '', // belum ada petugas saat pengajuan
-        }
-      });
-      setShowModalAjuan(false);
-      setFormAjuan({ nik: '', namaPemohon: '', jenisSurat: JENIS_SURAT[0], keperluan: '', tanggalAjuan: getTodayStr(), catatan: '' });
-      setError('');
+  const simpanAjuan = () => {
+    if (!formAjuan.nik || !formAjuan.namaPemohon || !formAjuan.keperluan) {
+      setError('NIK, Nama Pemohon, dan Keperluan wajib diisi.'); return;
     }
+    const nomor = `S-${new Date().getFullYear()}-${String(state.pengajuanSurat.length+1).padStart(3,'0')}`;
+    dispatch({ type: 'TAMBAH_PENGAJUAN', payload: { ...formAjuan, nomorAntrian: nomor, status: 'Menunggu', tanggalSelesai: '', petugas: '' } });
+    setShowModalAjuan(false);
+    setFormAjuan({ nik:'', namaPemohon:'', jenisSurat: JENIS_SURAT[0], keperluan:'', tanggalAjuan: getTodayStr(), catatan:'' });
+    setError('');
+  };
 
-  // ── UPDATE STATUS ─────────────────────────────────────────
   const bukaUpdate = s => {
     setShowModalUpdate(s);
-    setFormUpdate({
-      status:         s.status,
-      petugas:        s.petugas || namaPetugasLogin, // ← otomatis nama login
-      catatan:        s.catatan        || '',
-      tanggalSelesai: s.tanggalSelesai || '',
-    });
+    setFormUpdate({ status: s.status, petugas: s.petugas || namaPetugasLogin, catatan: s.catatan || '', tanggalSelesai: s.tanggalSelesai || '' });
   };
 
   const simpanUpdate = () => {
     const updated = { ...showModalUpdate, ...formUpdate };
-    if (formUpdate.status==='Selesai' && !updated.tanggalSelesai)
-      updated.tanggalSelesai = getTodayStr();
-
+    if (formUpdate.status==='Selesai' && !updated.tanggalSelesai) updated.tanggalSelesai = getTodayStr();
     dispatch({ type:'UPDATE_PENGAJUAN', payload:updated });
-
-    // Jika selesai → otomatis simpan ke arsip dengan nama petugas login
     if (formUpdate.status==='Selesai') {
       const nomorSurat = generateNomor(showModalUpdate.jenisSurat);
-      dispatch({
-        type: 'TAMBAH_ARSIP',
-        payload: {
-          nomorSurat,
-          tanggal:   updated.tanggalSelesai||getTodayStr(),
-          jenis:     showModalUpdate.jenisSurat,
-          penerima:  showModalUpdate.namaPemohon,
-          nik:       showModalUpdate.nik,
-          keperluan: showModalUpdate.keperluan,
-          dibuat:    formUpdate.petugas || namaPetugasLogin, // ← otomatis nama login
-          file:      `${nomorSurat.replace(/\//g,'_')}.pdf`,
-        }
-      });
+      dispatch({ type: 'TAMBAH_ARSIP', payload: { nomorSurat, tanggal: updated.tanggalSelesai||getTodayStr(), jenis: showModalUpdate.jenisSurat, penerima: showModalUpdate.namaPemohon, nik: showModalUpdate.nik, keperluan: showModalUpdate.keperluan, dibuat: formUpdate.petugas || namaPetugasLogin, file: `${nomorSurat.replace(/\//g,'_')}.pdf` } });
     }
     setShowModalUpdate(null);
   };
 
-  // ── SIMPAN ARSIP MANUAL ───────────────────────────────────
   const simpanArsip = () => {
-    if (!formArsip.nomorSurat||!formArsip.penerima) {
-      setError('Nomor surat dan penerima wajib diisi.'); return;
-    }
+    if (!formArsip.nomorSurat||!formArsip.penerima) { setError('Nomor surat dan penerima wajib diisi.'); return; }
     dispatch({ type:'TAMBAH_ARSIP', payload:{ ...formArsip, dibuat: formArsip.dibuat||namaPetugasLogin } });
     setShowModalArsip(false);
     setFormArsip({ nomorSurat:'', tanggal: getTodayStr(), jenis: JENIS_SURAT[0], penerima:'', nik:'', keperluan:'', dibuat: namaPetugasLogin });
     setError('');
   };
 
-  // ── TEMPLATE ──────────────────────────────────────────────
-  const bukaEditTemplate = jenis => {
-    setShowEditTemplate(jenis);
-    setFormTemplate({ ...(templates[jenis]||{}) });
-  };
-
-  const simpanTemplate = () => {
-    dispatch({ type:'UPDATE_TEMPLATE_SURAT', payload:{ jenis:showEditTemplate, data:formTemplate } });
-    setShowEditTemplate(null);
-  };
-
-  const insertPlaceholder = tag => {
-    setFormTemplate(f => ({ ...f, isi:(f.isi||'')+tag }));
-  };
-
+  const bukaEditTemplate = jenis => { setShowEditTemplate(jenis); setFormTemplate({ ...(templates[jenis]||{}) }); };
+  const simpanTemplate = () => { dispatch({ type:'UPDATE_TEMPLATE_SURAT', payload:{ jenis:showEditTemplate, data:formTemplate } }); setShowEditTemplate(null); };
+  const insertPlaceholder = tag => { setFormTemplate(f => ({ ...f, isi:(f.isi||'')+tag })); };
   const statusColor = s => s==='Selesai'?'success':s==='Diproses'?'warning':'default';
 
-  const tabs = [
+  // Tab berdasarkan role
+  const tabs = adminMode ? [
+    { id:'arsip', label:'Arsip Surat' },
+    { id:'format', label:'Format Surat' },
+  ] : [
     { id:'pengajuan', label:'Pengajuan Surat', badge: pending||null },
     { id:'arsip',     label:'Arsip Digital' },
     { id:'format',    label:'Format Surat' },
   ];
 
   return (
-    <div style={{ padding: window.innerWidth < 600 ? '12px 10px' : 24 }}>
+    <div style={{ padding:24 }}>
       <SectionHeader
-        title="📋 Surat Menyurat & Arsip"
-        sub="Kelola pengajuan surat warga, arsip, dan format dokumen desa"
+        title={adminMode ? "🗂 Arsip & Laporan Surat" : "📋 Surat Menyurat & Arsip"}
+        sub={adminMode ? "Lihat arsip dan laporan surat desa" : "Kelola pengajuan surat warga, arsip, dan format dokumen desa"}
         action={
           <div style={{ display:'flex', gap:8, flexWrap:'wrap', justifyContent:'flex-end' }}>
-            <Btn onClick={()=>{ setFormPengaturan({...desa}); setShowPengaturan(true); }} variant="ghost">⚙</Btn>
-            <Btn onClick={()=>{ setShowModalArsip(true); setError(''); }} variant="ghost">+ Arsip</Btn>
-            <Btn onClick={()=>{ setShowModalAjuan(true); setError(''); }} variant="primary">+ Pengajuan</Btn>
+            {/* Admin bisa edit pengaturan desa, user tidak */}
+            {adminMode && (
+              <Btn onClick={()=>{ setFormPengaturan({...desa}); setShowPengaturan(true); }} variant="ghost">⚙ Pengaturan Desa</Btn>
+            )}
+            {/* Hanya user yang bisa tambah arsip dan pengajuan */}
+            {!adminMode && (
+              <>
+                <Btn onClick={()=>{ setShowModalArsip(true); setError(''); }} variant="ghost">+ Arsip</Btn>
+                <Btn onClick={()=>{ setShowModalAjuan(true); setError(''); }} variant="primary">+ Pengajuan</Btn>
+              </>
+            )}
+            {/* Admin bisa hapus arsip — ditampilkan di tabel */}
           </div>
         }
       />
 
-      {/* Info petugas yang login */}
-     <div style={{ display:'flex', alignItems:'flex-start', gap:10, marginBottom:16, padding:'10px 16px', background:'#EBF3FC', borderRadius:10, border:'1px solid #B5D4F4', fontSize:12, flexWrap:'wrap' }}>
-        <span style={{ fontSize:16 }}>👤</span>
-        <span style={{ color:'#1B5EA0' }}>
-          Login sebagai <strong>{namaPetugasLogin}</strong> — {jabatanLogin}.
-          Nama Anda akan otomatis tercatat sebagai petugas di setiap surat yang diproses.
+      {/* Info role */}
+      <div style={{ display:'flex', alignItems:'flex-start', gap:10, marginBottom:16, padding:'10px 16px', background: adminMode ? '#EBF3FC' : '#EAF3DE', borderRadius:10, border:`1px solid ${adminMode ? '#B5D4F4' : '#A8D5A2'}`, fontSize:12, flexWrap:'wrap' }}>
+        <span style={{ fontSize:16 }}>{adminMode ? '🏛' : '👤'}</span>
+        <span style={{ color: adminMode ? '#1B5EA0' : '#2D6A0F' }}>
+          {adminMode
+            ? <>Login sebagai <strong>{namaPetugasLogin}</strong> — {jabatanLogin}. Anda hanya dapat melihat arsip dan mengatur format surat.</>
+            : <>Login sebagai <strong>{namaPetugasLogin}</strong> — {jabatanLogin}. Nama Anda akan otomatis tercatat sebagai petugas di setiap surat yang diproses.</>
+          }
         </span>
       </div>
 
@@ -381,8 +310,8 @@ export default function SuratMenyurat() {
 
       <TabBar tabs={tabs} active={tab} onChange={setTab} />
 
-      {/* ═══ TAB PENGAJUAN ═══ */}
-      {tab==='pengajuan' && (
+      {/* ═══ TAB PENGAJUAN (hanya user) ═══ */}
+      {tab==='pengajuan' && !adminMode && (
         <>
           <div style={{ display:'flex', gap:8, marginBottom:14, flexWrap:'wrap' }}>
             {['','Menunggu','Diproses','Selesai'].map(s=>(
@@ -418,10 +347,7 @@ export default function SuratMenyurat() {
                         <td style={{ padding:'10px 14px', fontSize:12 }}>{s.jenisSurat}</td>
                         <td style={{ padding:'10px 14px', fontSize:12, color:'#718096' }}>{s.keperluan}</td>
                         <td style={{ padding:'10px 14px', fontSize:12 }}>
-                          {s.petugas
-                            ? <span style={{ fontWeight:500 }}>{s.petugas}</span>
-                            : <span style={{ color:'#A0AEC0', fontSize:11 }}>Belum ditangani</span>
-                          }
+                          {s.petugas ? <span style={{ fontWeight:500 }}>{s.petugas}</span> : <span style={{ color:'#A0AEC0', fontSize:11 }}>Belum ditangani</span>}
                         </td>
                         <td style={{ padding:'10px 14px' }}>
                           <Badge type={statusColor(s.status)}>{s.status}</Badge>
@@ -476,7 +402,12 @@ export default function SuratMenyurat() {
                           <div style={{ fontSize:13, fontWeight:500 }}>{a.dibuat}</div>
                         </td>
                         <td style={{ padding:'10px 14px', whiteSpace:'nowrap' }}>
-                          <Btn onClick={()=>{ if(window.confirm('Hapus arsip ini?')) dispatch({type:'HAPUS_ARSIP',payload:a.id}); }} variant="danger" size="sm">🗑 Hapus</Btn>
+                          {/* Admin bisa hapus arsip, user tidak */}
+                          {adminMode ? (
+                            <Btn onClick={()=>{ if(window.confirm('Hapus arsip ini?')) dispatch({type:'HAPUS_ARSIP',payload:a.id}); }} variant="danger" size="sm">🗑 Hapus</Btn>
+                          ) : (
+                            <Btn onClick={()=>setShowPreviewModal({ jenisSurat:a.jenis, nik:a.nik, namaPemohon:a.penerima, keperluan:a.keperluan, tanggalAjuan:a.tanggal, tanggalSelesai:a.tanggal })} variant="ghost" size="sm">👁 Preview</Btn>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -511,7 +442,8 @@ export default function SuratMenyurat() {
                     </div>
                     <div style={{ display:'flex', gap:6 }}>
                       <Btn onClick={()=>setShowPreviewModal({ jenisSurat:jenis, nik: state.penduduk[0]?.nik||'', namaPemohon: state.penduduk[0]?.nama||'Contoh Warga', keperluan:'Contoh keperluan surat', tanggalAjuan: getTodayStr(), tanggalSelesai:'' })} variant="ghost" size="sm">👁</Btn>
-                      <Btn onClick={()=>bukaEditTemplate(jenis)} variant="primary" size="sm">✏ Edit</Btn>
+                      {/* Admin bisa edit template */}
+                      {adminMode && <Btn onClick={()=>bukaEditTemplate(jenis)} variant="primary" size="sm">✏ Edit</Btn>}
                     </div>
                   </div>
                   <div style={{ fontSize:12, color:'#718096', background:'#F8FAFC', borderRadius:8, padding:'10px 12px', lineHeight:1.6, maxHeight:72, overflow:'hidden', position:'relative' }}>
@@ -525,9 +457,7 @@ export default function SuratMenyurat() {
         </div>
       )}
 
-      {/* ══════════════════════════════════════════
-          MODAL: PREVIEW & PRINT
-      ══════════════════════════════════════════ */}
+      {/* ══ MODAL PREVIEW & PRINT ══ */}
       <Modal show={!!showPreviewModal} onClose={()=>setShowPreviewModal(null)} title={`👁 Preview — ${showPreviewModal?.jenisSurat||''}`} width={640}>
         {showPreviewModal && (() => {
           const warga   = cariWarga(showPreviewModal.nik);
@@ -542,7 +472,7 @@ export default function SuratMenyurat() {
                   <div style={{ fontSize:12, color:'#718096' }}>{showPreviewModal.namaPemohon} · {tanggal}</div>
                 </div>
                 <div style={{ display:'flex', gap:8 }}>
-                  <Btn onClick={()=>bukaEditTemplate(showPreviewModal.jenisSurat)} variant="ghost" size="sm">✏ Edit Template</Btn>
+                  {adminMode && <Btn onClick={()=>bukaEditTemplate(showPreviewModal.jenisSurat)} variant="ghost" size="sm">✏ Edit Template</Btn>}
                   <Btn onClick={handlePrint} variant="primary" size="sm">🖨 Cetak</Btn>
                 </div>
               </div>
@@ -595,139 +525,132 @@ export default function SuratMenyurat() {
         )}
       </Modal>
 
-      {/* ══ MODAL PENGAJUAN BARU ══ */}
-      <Modal show={showModalAjuan} onClose={()=>setShowModalAjuan(false)} title="📋 Pengajuan Surat Baru" width={500}>
-        {error && <Alert type="danger">{error}</Alert>}
-        <Alert type="info">Masukkan NIK warga — nama akan terisi otomatis jika terdaftar.</Alert>
-        <Input label="NIK Pemohon" value={formAjuan.nik} onChange={e=>autofillNIK(e.target.value)} placeholder="16 digit NIK" maxLength={16} />
-        <Input label="Nama Pemohon" value={formAjuan.namaPemohon} onChange={e=>setFormAjuan({...formAjuan,namaPemohon:e.target.value})} placeholder="Nama lengkap" />
-        <Select label="Jenis Surat" value={formAjuan.jenisSurat} onChange={e=>setFormAjuan({...formAjuan,jenisSurat:e.target.value})}>
-          {JENIS_SURAT.map(j=><option key={j}>{j}</option>)}
-        </Select>
-        <Input label="Keperluan" value={formAjuan.keperluan} onChange={e=>setFormAjuan({...formAjuan,keperluan:e.target.value})} placeholder="cth: Melamar kerja, Beasiswa" />
-        <Input label="Tanggal Pengajuan" type="date" value={formAjuan.tanggalAjuan} onChange={e=>setFormAjuan({...formAjuan,tanggalAjuan:e.target.value})} />
-        <Input label="Catatan (opsional)" value={formAjuan.catatan} onChange={e=>setFormAjuan({...formAjuan,catatan:e.target.value})} placeholder="Catatan tambahan..." />
-        <div style={{ display:'flex', justifyContent:'flex-end', gap:8, marginTop:8 }}>
-          <Btn onClick={()=>setShowModalAjuan(false)}>Batal</Btn>
-          <Btn variant="primary" onClick={simpanAjuan}>📤 Ajukan Surat</Btn>
-        </div>
-      </Modal>
-
-      {/* ══ MODAL UPDATE STATUS ══ */}
-      <Modal show={!!showModalUpdate} onClose={()=>setShowModalUpdate(null)} title={`✏ Update Status — ${showModalUpdate?.nomorAntrian}`} width={460}>
-        {showModalUpdate && (
-          <>
-            <div style={{ background:'#F8FAFC', borderRadius:10, padding:'12px 16px', marginBottom:14 }}>
-              <div style={{ fontWeight:600, fontSize:14 }}>{showModalUpdate.namaPemohon}</div>
-              <div style={{ fontSize:12, color:'#718096' }}>{showModalUpdate.jenisSurat} · {showModalUpdate.keperluan}</div>
-              <div style={{ marginTop:6 }}><Badge type={statusColor(showModalUpdate.status)}>{showModalUpdate.status}</Badge></div>
-            </div>
-
-            {/* Pilih status */}
-            <div style={{ marginBottom:14 }}>
-              <div style={{ fontSize:13, fontWeight:600, color:'#4A5568', marginBottom:8 }}>Ubah Status ke:</div>
-              <div style={{ display:'flex', gap:8 }}>
-                {['Menunggu','Diproses','Selesai'].map(s=>(
-                  <button key={s} onClick={()=>setFormUpdate({...formUpdate,status:s})}
-                    style={{ flex:1, padding:'10px', fontSize:13, borderRadius:8, border:'1.5px solid', borderColor:formUpdate.status===s?(s==='Selesai'?'#2D6A0F':s==='Diproses'?'#A0621B':'#1B5EA0'):'#E2E8F0', background:formUpdate.status===s?(s==='Selesai'?'#EAF3DE':s==='Diproses'?'#FAEEDA':'#EBF3FC'):'#fff', color:formUpdate.status===s?(s==='Selesai'?'#27500A':s==='Diproses'?'#633806':'#0C447C'):'#718096', cursor:'pointer', fontFamily:'inherit', fontWeight:formUpdate.status===s?700:400 }}>
-                    {s==='Menunggu'?'⏳':s==='Diproses'?'⚙️':'✅'} {s}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Petugas — otomatis nama login, tapi bisa diubah */}
-            <div style={{ marginBottom:14 }}>
-              <label style={{ display:'block', fontSize:13, fontWeight:600, color:'#4A5568', marginBottom:6 }}>Petugas yang Menangani</label>
-              <div style={{ display:'flex', gap:8, alignItems:'center' }}>
-                <input
-                  value={formUpdate.petugas||''}
-                  onChange={e=>setFormUpdate({...formUpdate,petugas:e.target.value})}
-                  placeholder="Nama petugas"
-                  style={{ flex:1, border:'1.5px solid #CBD5E1', borderRadius:10, padding:'10px 14px', fontSize:14, fontFamily:'inherit', background:'#fff', outline:'none' }}
-                />
-                <button
-                  onClick={()=>setFormUpdate({...formUpdate,petugas:namaPetugasLogin})}
-                  style={{ padding:'10px 12px', fontSize:12, borderRadius:10, border:'1.5px solid #1B5EA0', background:'#EBF3FC', color:'#1B5EA0', cursor:'pointer', fontFamily:'inherit', fontWeight:600, whiteSpace:'nowrap' }}>
-                  👤 Pakai Nama Saya
-                </button>
-              </div>
-              <div style={{ fontSize:11, color:'#A0AEC0', marginTop:4 }}>
-                Login sebagai: <strong>{namaPetugasLogin}</strong> ({jabatanLogin})
-              </div>
-            </div>
-
-            {formUpdate.status==='Selesai' && (
-              <>
-                <Input label="Tanggal Selesai" type="date" value={formUpdate.tanggalSelesai||getTodayStr()} onChange={e=>setFormUpdate({...formUpdate,tanggalSelesai:e.target.value})} />
-                <Alert type="success">✅ Surat akan otomatis disimpan ke Arsip Digital atas nama <strong>{formUpdate.petugas||namaPetugasLogin}</strong>.</Alert>
-              </>
-            )}
-
-            <Input label="Catatan" value={formUpdate.catatan||''} onChange={e=>setFormUpdate({...formUpdate,catatan:e.target.value})} placeholder="Keterangan proses..." />
-
-            <div style={{ display:'flex', justifyContent:'flex-end', gap:8, marginTop:12 }}>
-              <Btn onClick={()=>setShowModalUpdate(null)}>Batal</Btn>
-              <Btn variant="primary" onClick={simpanUpdate}>💾 Simpan Update</Btn>
-            </div>
-          </>
-        )}
-      </Modal>
-
-      {/* ══ MODAL TAMBAH ARSIP MANUAL ══ */}
-      <Modal show={showModalArsip} onClose={()=>setShowModalArsip(false)} title="🗂 Tambah Arsip Surat" width={500}>
-        {error && <Alert type="danger">{error}</Alert>}
-        <Input label="Nomor Surat" value={formArsip.nomorSurat} onChange={e=>setFormArsip({...formArsip,nomorSurat:e.target.value})} placeholder="DS/SKD/2025/001" />
-        <FormRow>
-          <Select label="Jenis Surat" value={formArsip.jenis} onChange={e=>setFormArsip({...formArsip,jenis:e.target.value})}>
+      {/* ══ MODAL PENGAJUAN BARU (hanya user) ══ */}
+      {!adminMode && (
+        <Modal show={showModalAjuan} onClose={()=>setShowModalAjuan(false)} title="📋 Pengajuan Surat Baru" width={500}>
+          {error && <Alert type="danger">{error}</Alert>}
+          <Alert type="info">Masukkan NIK warga — nama akan terisi otomatis jika terdaftar.</Alert>
+          <Input label="NIK Pemohon" value={formAjuan.nik} onChange={e=>autofillNIK(e.target.value)} placeholder="16 digit NIK" maxLength={16} />
+          <Input label="Nama Pemohon" value={formAjuan.namaPemohon} onChange={e=>setFormAjuan({...formAjuan,namaPemohon:e.target.value})} placeholder="Nama lengkap" />
+          <Select label="Jenis Surat" value={formAjuan.jenisSurat} onChange={e=>setFormAjuan({...formAjuan,jenisSurat:e.target.value})}>
             {JENIS_SURAT.map(j=><option key={j}>{j}</option>)}
           </Select>
-          <Input label="Tanggal Surat" type="date" value={formArsip.tanggal} onChange={e=>setFormArsip({...formArsip,tanggal:e.target.value})} />
-        </FormRow>
-        <Input label="Nama Penerima" value={formArsip.penerima} onChange={e=>setFormArsip({...formArsip,penerima:e.target.value})} placeholder="Nama lengkap penerima" />
-        <Input label="NIK Penerima" value={formArsip.nik} onChange={e=>setFormArsip({...formArsip,nik:e.target.value})} placeholder="16 digit NIK" maxLength={16} />
-        <Input label="Keperluan" value={formArsip.keperluan} onChange={e=>setFormArsip({...formArsip,keperluan:e.target.value})} placeholder="Keperluan surat" />
-        {/* Dibuat otomatis nama login */}
-        <div style={{ marginBottom:14 }}>
-          <label style={{ display:'block', fontSize:13, fontWeight:600, color:'#4A5568', marginBottom:6 }}>Dibuat Oleh</label>
-          <input value={formArsip.dibuat} onChange={e=>setFormArsip({...formArsip,dibuat:e.target.value})}
-            style={{ width:'100%', border:'1.5px solid #CBD5E1', borderRadius:10, padding:'10px 14px', fontSize:14, fontFamily:'inherit', background:'#fff', outline:'none', boxSizing:'border-box' }} />
-          <div style={{ fontSize:11, color:'#A0AEC0', marginTop:4 }}>Otomatis diisi nama yang sedang login</div>
-        </div>
-        <div style={{ display:'flex', justifyContent:'flex-end', gap:8, marginTop:8 }}>
-          <Btn onClick={()=>setShowModalArsip(false)}>Batal</Btn>
-          <Btn variant="primary" onClick={simpanArsip}>💾 Simpan Arsip</Btn>
-        </div>
-      </Modal>
+          <Input label="Keperluan" value={formAjuan.keperluan} onChange={e=>setFormAjuan({...formAjuan,keperluan:e.target.value})} placeholder="cth: Melamar kerja, Beasiswa" />
+          <Input label="Tanggal Pengajuan" type="date" value={formAjuan.tanggalAjuan} onChange={e=>setFormAjuan({...formAjuan,tanggalAjuan:e.target.value})} />
+          <Input label="Catatan (opsional)" value={formAjuan.catatan} onChange={e=>setFormAjuan({...formAjuan,catatan:e.target.value})} placeholder="Catatan tambahan..." />
+          <div style={{ display:'flex', justifyContent:'flex-end', gap:8, marginTop:8 }}>
+            <Btn onClick={()=>setShowModalAjuan(false)}>Batal</Btn>
+            <Btn variant="primary" onClick={simpanAjuan}>📤 Ajukan Surat</Btn>
+          </div>
+        </Modal>
+      )}
 
-      {/* ══ MODAL PENGATURAN DESA ══ */}
-      <Modal show={showPengaturan} onClose={()=>setShowPengaturan(false)} title="⚙ Pengaturan Data Desa" width={520}>
-        <Alert type="info">Data ini digunakan sebagai kop surat di seluruh dokumen.</Alert>
-        <FormRow>
-          <Input label="Nama Desa" value={formPengaturan.namaDesa||''} onChange={e=>setFormPengaturan({...formPengaturan,namaDesa:e.target.value})} />
-          <Input label="Kecamatan" value={formPengaturan.kecamatan||''} onChange={e=>setFormPengaturan({...formPengaturan,kecamatan:e.target.value})} />
-        </FormRow>
-        <FormRow>
-          <Input label="Kabupaten" value={formPengaturan.kabupaten||''} onChange={e=>setFormPengaturan({...formPengaturan,kabupaten:e.target.value})} />
-          <Input label="Provinsi" value={formPengaturan.provinsi||''} onChange={e=>setFormPengaturan({...formPengaturan,provinsi:e.target.value})} />
-        </FormRow>
-        <FormRow>
-          <Input label="Kode Pos" value={formPengaturan.kodePos||''} onChange={e=>setFormPengaturan({...formPengaturan,kodePos:e.target.value})} />
-          <Input label="No. Telepon" value={formPengaturan.telp||''} onChange={e=>setFormPengaturan({...formPengaturan,telp:e.target.value})} />
-        </FormRow>
-        <Input label="Alamat Kantor Desa" value={formPengaturan.alamat||''} onChange={e=>setFormPengaturan({...formPengaturan,alamat:e.target.value})} />
-        <FormRow>
-          <Input label="Nama Kepala Desa" value={formPengaturan.kepalaDesa||''} onChange={e=>setFormPengaturan({...formPengaturan,kepalaDesa:e.target.value})} />
-          <Input label="NIP" value={formPengaturan.nip||''} onChange={e=>setFormPengaturan({...formPengaturan,nip:e.target.value})} />
-        </FormRow>
-        <Input label="Sekretaris Desa" value={formPengaturan.sekretaris||''} onChange={e=>setFormPengaturan({...formPengaturan,sekretaris:e.target.value})} />
-        <div style={{ display:'flex', justifyContent:'flex-end', gap:8, marginTop:12 }}>
-          <Btn onClick={()=>setShowPengaturan(false)}>Batal</Btn>
-          <Btn variant="primary" onClick={()=>{ dispatch({type:'UPDATE_PENGATURAN_DESA',payload:formPengaturan}); setShowPengaturan(false); }}>
-            💾 Simpan
-          </Btn>
-        </div>
-      </Modal>
+      {/* ══ MODAL UPDATE STATUS (hanya user) ══ */}
+      {!adminMode && (
+        <Modal show={!!showModalUpdate} onClose={()=>setShowModalUpdate(null)} title={`✏ Update Status — ${showModalUpdate?.nomorAntrian}`} width={460}>
+          {showModalUpdate && (
+            <>
+              <div style={{ background:'#F8FAFC', borderRadius:10, padding:'12px 16px', marginBottom:14 }}>
+                <div style={{ fontWeight:600, fontSize:14 }}>{showModalUpdate.namaPemohon}</div>
+                <div style={{ fontSize:12, color:'#718096' }}>{showModalUpdate.jenisSurat} · {showModalUpdate.keperluan}</div>
+                <div style={{ marginTop:6 }}><Badge type={statusColor(showModalUpdate.status)}>{showModalUpdate.status}</Badge></div>
+              </div>
+              <div style={{ marginBottom:14 }}>
+                <div style={{ fontSize:13, fontWeight:600, color:'#4A5568', marginBottom:8 }}>Ubah Status ke:</div>
+                <div style={{ display:'flex', gap:8 }}>
+                  {['Menunggu','Diproses','Selesai'].map(s=>(
+                    <button key={s} onClick={()=>setFormUpdate({...formUpdate,status:s})}
+                      style={{ flex:1, padding:'10px', fontSize:13, borderRadius:8, border:'1.5px solid', borderColor:formUpdate.status===s?(s==='Selesai'?'#2D6A0F':s==='Diproses'?'#A0621B':'#1B5EA0'):'#E2E8F0', background:formUpdate.status===s?(s==='Selesai'?'#EAF3DE':s==='Diproses'?'#FAEEDA':'#EBF3FC'):'#fff', color:formUpdate.status===s?(s==='Selesai'?'#27500A':s==='Diproses'?'#633806':'#0C447C'):'#718096', cursor:'pointer', fontFamily:'inherit', fontWeight:formUpdate.status===s?700:400 }}>
+                      {s==='Menunggu'?'⏳':s==='Diproses'?'⚙️':'✅'} {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div style={{ marginBottom:14 }}>
+                <label style={{ display:'block', fontSize:13, fontWeight:600, color:'#4A5568', marginBottom:6 }}>Petugas yang Menangani</label>
+                <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+                  <input value={formUpdate.petugas||''} onChange={e=>setFormUpdate({...formUpdate,petugas:e.target.value})} placeholder="Nama petugas"
+                    style={{ flex:1, border:'1.5px solid #CBD5E1', borderRadius:10, padding:'10px 14px', fontSize:14, fontFamily:'inherit', background:'#fff', outline:'none' }} />
+                  <button onClick={()=>setFormUpdate({...formUpdate,petugas:namaPetugasLogin})}
+                    style={{ padding:'10px 12px', fontSize:12, borderRadius:10, border:'1.5px solid #1B5EA0', background:'#EBF3FC', color:'#1B5EA0', cursor:'pointer', fontFamily:'inherit', fontWeight:600, whiteSpace:'nowrap' }}>
+                    👤 Pakai Nama Saya
+                  </button>
+                </div>
+                <div style={{ fontSize:11, color:'#A0AEC0', marginTop:4 }}>Login sebagai: <strong>{namaPetugasLogin}</strong> ({jabatanLogin})</div>
+              </div>
+              {formUpdate.status==='Selesai' && (
+                <>
+                  <Input label="Tanggal Selesai" type="date" value={formUpdate.tanggalSelesai||getTodayStr()} onChange={e=>setFormUpdate({...formUpdate,tanggalSelesai:e.target.value})} />
+                  <Alert type="success">✅ Surat akan otomatis disimpan ke Arsip Digital atas nama <strong>{formUpdate.petugas||namaPetugasLogin}</strong>.</Alert>
+                </>
+              )}
+              <Input label="Catatan" value={formUpdate.catatan||''} onChange={e=>setFormUpdate({...formUpdate,catatan:e.target.value})} placeholder="Keterangan proses..." />
+              <div style={{ display:'flex', justifyContent:'flex-end', gap:8, marginTop:12 }}>
+                <Btn onClick={()=>setShowModalUpdate(null)}>Batal</Btn>
+                <Btn variant="primary" onClick={simpanUpdate}>💾 Simpan Update</Btn>
+              </div>
+            </>
+          )}
+        </Modal>
+      )}
+
+      {/* ══ MODAL TAMBAH ARSIP (hanya user) ══ */}
+      {!adminMode && (
+        <Modal show={showModalArsip} onClose={()=>setShowModalArsip(false)} title="🗂 Tambah Arsip Surat" width={500}>
+          {error && <Alert type="danger">{error}</Alert>}
+          <Input label="Nomor Surat" value={formArsip.nomorSurat} onChange={e=>setFormArsip({...formArsip,nomorSurat:e.target.value})} placeholder="DS/SKD/2025/001" />
+          <FormRow>
+            <Select label="Jenis Surat" value={formArsip.jenis} onChange={e=>setFormArsip({...formArsip,jenis:e.target.value})}>
+              {JENIS_SURAT.map(j=><option key={j}>{j}</option>)}
+            </Select>
+            <Input label="Tanggal Surat" type="date" value={formArsip.tanggal} onChange={e=>setFormArsip({...formArsip,tanggal:e.target.value})} />
+          </FormRow>
+          <Input label="Nama Penerima" value={formArsip.penerima} onChange={e=>setFormArsip({...formArsip,penerima:e.target.value})} placeholder="Nama lengkap penerima" />
+          <Input label="NIK Penerima" value={formArsip.nik} onChange={e=>setFormArsip({...formArsip,nik:e.target.value})} placeholder="16 digit NIK" maxLength={16} />
+          <Input label="Keperluan" value={formArsip.keperluan} onChange={e=>setFormArsip({...formArsip,keperluan:e.target.value})} placeholder="Keperluan surat" />
+          <div style={{ marginBottom:14 }}>
+            <label style={{ display:'block', fontSize:13, fontWeight:600, color:'#4A5568', marginBottom:6 }}>Dibuat Oleh</label>
+            <input value={formArsip.dibuat} onChange={e=>setFormArsip({...formArsip,dibuat:e.target.value})}
+              style={{ width:'100%', border:'1.5px solid #CBD5E1', borderRadius:10, padding:'10px 14px', fontSize:14, fontFamily:'inherit', background:'#fff', outline:'none', boxSizing:'border-box' }} />
+            <div style={{ fontSize:11, color:'#A0AEC0', marginTop:4 }}>Otomatis diisi nama yang sedang login</div>
+          </div>
+          <div style={{ display:'flex', justifyContent:'flex-end', gap:8, marginTop:8 }}>
+            <Btn onClick={()=>setShowModalArsip(false)}>Batal</Btn>
+            <Btn variant="primary" onClick={simpanArsip}>💾 Simpan Arsip</Btn>
+          </div>
+        </Modal>
+      )}
+
+      {/* ══ MODAL PENGATURAN DESA (hanya admin) ══ */}
+      {adminMode && (
+        <Modal show={showPengaturan} onClose={()=>setShowPengaturan(false)} title="⚙ Pengaturan Data Desa" width={520}>
+          <Alert type="info">Data ini digunakan sebagai kop surat di seluruh dokumen.</Alert>
+          <FormRow>
+            <Input label="Nama Desa" value={formPengaturan.namaDesa||''} onChange={e=>setFormPengaturan({...formPengaturan,namaDesa:e.target.value})} />
+            <Input label="Kecamatan" value={formPengaturan.kecamatan||''} onChange={e=>setFormPengaturan({...formPengaturan,kecamatan:e.target.value})} />
+          </FormRow>
+          <FormRow>
+            <Input label="Kabupaten" value={formPengaturan.kabupaten||''} onChange={e=>setFormPengaturan({...formPengaturan,kabupaten:e.target.value})} />
+            <Input label="Provinsi" value={formPengaturan.provinsi||''} onChange={e=>setFormPengaturan({...formPengaturan,provinsi:e.target.value})} />
+          </FormRow>
+          <FormRow>
+            <Input label="Kode Pos" value={formPengaturan.kodePos||''} onChange={e=>setFormPengaturan({...formPengaturan,kodePos:e.target.value})} />
+            <Input label="No. Telepon" value={formPengaturan.telp||''} onChange={e=>setFormPengaturan({...formPengaturan,telp:e.target.value})} />
+          </FormRow>
+          <Input label="Alamat Kantor Desa" value={formPengaturan.alamat||''} onChange={e=>setFormPengaturan({...formPengaturan,alamat:e.target.value})} />
+          <FormRow>
+            <Input label="Nama Kepala Desa" value={formPengaturan.kepalaDesa||''} onChange={e=>setFormPengaturan({...formPengaturan,kepalaDesa:e.target.value})} />
+            <Input label="NIP" value={formPengaturan.nip||''} onChange={e=>setFormPengaturan({...formPengaturan,nip:e.target.value})} />
+          </FormRow>
+          <Input label="Sekretaris Desa" value={formPengaturan.sekretaris||''} onChange={e=>setFormPengaturan({...formPengaturan,sekretaris:e.target.value})} />
+          <div style={{ display:'flex', justifyContent:'flex-end', gap:8, marginTop:12 }}>
+            <Btn onClick={()=>setShowPengaturan(false)}>Batal</Btn>
+            <Btn variant="primary" onClick={()=>{ dispatch({type:'UPDATE_PENGATURAN_DESA',payload:formPengaturan}); setShowPengaturan(false); }}>
+              💾 Simpan
+            </Btn>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

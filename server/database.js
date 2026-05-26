@@ -41,16 +41,20 @@ async function initDatabase() {
 
     await conn.execute(`
       CREATE TABLE IF NOT EXISTS users (
-        id         INT AUTO_INCREMENT PRIMARY KEY,
-        nama       VARCHAR(100) NOT NULL,
-        username   VARCHAR(50)  UNIQUE NOT NULL,
-        password   VARCHAR(255) NOT NULL,
-        role       ENUM('kepala_desa','perangkat_desa') DEFAULT 'perangkat_desa',
-        jabatan    VARCHAR(100),
-        nip        VARCHAR(50),
-        no_hp      VARCHAR(20),
-        aktif      TINYINT(1) DEFAULT 1,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        id             INT AUTO_INCREMENT PRIMARY KEY,
+        nama           VARCHAR(100) NOT NULL,
+        email          VARCHAR(100) UNIQUE,
+        username       VARCHAR(50)  UNIQUE NOT NULL,
+        password       VARCHAR(255) NOT NULL,
+        role           ENUM('kepala_desa','perangkat_desa') DEFAULT 'perangkat_desa',
+        jabatan        VARCHAR(100),
+        nip            VARCHAR(50),
+        no_hp          VARCHAR(20),
+        aktif          TINYINT(1) DEFAULT 1,
+        email_verified TINYINT(1) DEFAULT 0,
+        otp_code       VARCHAR(6)  DEFAULT NULL,
+        otp_expired    DATETIME    DEFAULT NULL,
+        created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     `);
 
@@ -126,19 +130,29 @@ async function initDatabase() {
 
     console.log('✅ Semua tabel berhasil dibuat');
 
-    // Tambah kolom no_kk jika belum ada (untuk database yang sudah ada)
-    try {
-      await conn.execute('ALTER TABLE penduduk ADD COLUMN no_kk VARCHAR(16) AFTER nik');
-      console.log('✅ Kolom no_kk berhasil ditambahkan');
-    } catch(e) { /* kolom sudah ada, skip */ }
+    // ── ALTER TABLE — tambah kolom jika belum ada ────────────
+    const alterColumns = [
+      { sql: 'ALTER TABLE penduduk ADD COLUMN no_kk VARCHAR(16) AFTER nik',                   msg: 'Kolom no_kk' },
+      { sql: 'ALTER TABLE users ADD COLUMN email VARCHAR(100) UNIQUE AFTER nama',              msg: 'Kolom email' },
+      { sql: 'ALTER TABLE users ADD COLUMN email_verified TINYINT(1) DEFAULT 0',              msg: 'Kolom email_verified' },
+      { sql: 'ALTER TABLE users ADD COLUMN otp_code VARCHAR(6) DEFAULT NULL',                 msg: 'Kolom otp_code' },
+      { sql: 'ALTER TABLE users ADD COLUMN otp_expired DATETIME DEFAULT NULL',                msg: 'Kolom otp_expired' },
+    ];
 
-    // ── HANYA BUAT ADMIN DEFAULT JIKA BELUM ADA ─────────────
+    for (const col of alterColumns) {
+      try {
+        await conn.execute(col.sql);
+        console.log(`✅ ${col.msg} berhasil ditambahkan`);
+      } catch(e) { /* kolom sudah ada, skip */ }
+    }
+
+    // ── BUAT ADMIN DEFAULT JIKA BELUM ADA ───────────────────
     const [adminExist] = await conn.execute('SELECT id FROM users WHERE username = ?', ['admin']);
     if (adminExist.length === 0) {
       const hash = await bcrypt.hash('admin123', 10);
       await conn.execute(
-        'INSERT INTO users (nama, username, password, role, jabatan, nip, no_hp, aktif) VALUES (?,?,?,?,?,?,?,1)',
-        ['Administrator', 'admin', hash, 'kepala_desa', 'Kepala Desa', '-', '-']
+        'INSERT INTO users (nama, email, username, password, role, jabatan, nip, no_hp, aktif, email_verified) VALUES (?,?,?,?,?,?,?,?,1,1)',
+        ['Administrator', 'admin@desacikulak.id', 'admin', hash, 'kepala_desa', 'Kepala Desa', '-', '-']
       );
       console.log('✅ Akun admin default berhasil dibuat (username: admin, password: admin123)');
     }
@@ -153,7 +167,6 @@ async function initDatabase() {
       console.log('✅ Pengaturan desa berhasil dibuat');
     }
 
-    // ── TIDAK ADA SEED DATA — input sendiri lewat aplikasi ───
     console.log('✅ Database MySQL siap digunakan!\n');
 
   } catch (err) {
