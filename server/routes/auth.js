@@ -99,7 +99,12 @@ router.post('/register', async (req, res) => {
     );
 
     // Kirim OTP ke email
-    await sendOTPEmail(email, otp, nama);
+try {
+  await sendOTPEmail(email, otp, nama);
+} catch (emailErr) {
+  console.error('❌ Gagal kirim email:', emailErr.message);
+  // Tetap lanjut meski email gagal
+}
 
     res.json({
       ok: true,
