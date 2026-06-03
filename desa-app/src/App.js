@@ -2,25 +2,33 @@ import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { AppProvider, useApp } from './context/AppContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import LoginPage from './pages/LoginPage';
-import Dashboard from './pages/Dashboard';
+import LoginPage    from './pages/LoginPage';
+import Dashboard    from './pages/Dashboard';
 import DataPenduduk from './pages/DataPenduduk';
 import SuratMenyurat from './pages/SuratMenyurat';
 import ManajemenUser from './pages/ManajemenUser';
+import Bansos       from './pages/Bansos';
+import Fasilitas    from './pages/Fasilitas';
+import Laporan      from './pages/Laporan';
 import './index.css';
 
-// ── NAVIGASI BERDASARKAN ROLE ─────────────────────────────
 const NAV_ADMIN = [
   { id:'dashboard', label:'Beranda',        emoji:'🏠', desc:'Ringkasan data' },
   { id:'penduduk',  label:'Data Penduduk',  emoji:'👥', desc:'Lihat data warga desa' },
   { id:'arsip',     label:'Arsip Surat',    emoji:'🗂',  desc:'Laporan & arsip surat' },
+  { id:'bansos',    label:'Bantuan Sosial', emoji:'🤝', desc:'Lihat program bansos' },
+  { id:'fasilitas', label:'Fasilitas Desa', emoji:'🏛',  desc:'Approve booking fasilitas' },
+  { id:'laporan',   label:'Laporan',        emoji:'📊', desc:'Rekap & export data' },
   { id:'users',     label:'Kelola Pengguna',emoji:'🔐', desc:'Manajemen akun' },
 ];
 
 const NAV_USER = [
   { id:'dashboard', label:'Beranda',        emoji:'🏠', desc:'Ringkasan data' },
   { id:'penduduk',  label:'Data Penduduk',  emoji:'👥', desc:'Kelola warga desa' },
-  { id:'surat',     label:'Surat & Arsip',  emoji:'📋', desc:'Pengajuan & format surat' },
+  { id:'surat',     label:'Surat & Arsip',  emoji:'📋', desc:'Pengajuan & arsip surat' },
+  { id:'bansos',    label:'Bantuan Sosial', emoji:'🤝', desc:'Kelola program bansos' },
+  { id:'fasilitas', label:'Fasilitas Desa', emoji:'🏛',  desc:'Inventaris & booking' },
+  { id:'laporan',   label:'Laporan',        emoji:'📊', desc:'Rekap data' },
 ];
 
 function AppInner() {
@@ -48,22 +56,14 @@ function AppInner() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Reset halaman jika tidak ada akses
   useEffect(() => {
     const validPages = NAV.map(n => n.id);
     if (!validPages.includes(page)) setPage('dashboard');
   }, [isKepala]);
 
-  const navigateTo = (id) => {
-    setPage(id);
-    if (isMobile) setSidebarOpen(false);
-  };
+  const navigateTo = (id) => { setPage(id); if (isMobile) setSidebarOpen(false); };
 
-  const handleLogout = () => {
-    logout();
-    setShowLogout(false);
-    toast.success('Berhasil keluar dari sistem');
-  };
+  const handleLogout = () => { logout(); setShowLogout(false); toast.success('Berhasil keluar dari sistem'); };
 
   const handleReload = async () => {
     const t = toast.loading('Memuat ulang data...');
@@ -72,43 +72,43 @@ function AppInner() {
     toast.success('Data berhasil dimuat ulang!');
   };
 
-  // ── HALAMAN BERDASARKAN ROLE ──────────────────────────────
   const pages = isKepala ? {
     dashboard: <Dashboard onNav={navigateTo} />,
     penduduk:  <DataPenduduk readOnly={true} />,
     arsip:     <SuratMenyurat adminMode={true} />,
+    bansos:    <Bansos />,
+    fasilitas: <Fasilitas />,
+    laporan:   <Laporan />,
     users:     <ManajemenUser />,
   } : {
     dashboard: <Dashboard onNav={navigateTo} />,
     penduduk:  <DataPenduduk readOnly={false} />,
     surat:     <SuratMenyurat adminMode={false} />,
+    bansos:    <Bansos />,
+    fasilitas: <Fasilitas />,
+    laporan:   <Laporan />,
   };
 
-  // ── LOADING ───────────────────────────────────────────────
   if (loadingData) {
     return (
       <div style={{ minHeight:'100vh', background:'#F0F4F8', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:"'Segoe UI', system-ui, sans-serif", padding:16 }}>
         <div style={{ textAlign:'center' }}>
           <div style={{ fontSize:52, marginBottom:16 }}>🏛</div>
           <div style={{ fontSize:18, fontWeight:700, color:'#1B5EA0', marginBottom:8 }}>Memuat Data...</div>
-          <div style={{ fontSize:13, color:'#718096' }}>Mengambil data dari database MySQL</div>
+          <div style={{ fontSize:13, color:'#718096' }}>Mengambil data dari database</div>
           <div className="spin" style={{ width:40, height:40, border:'4px solid #E2E8F0', borderTop:'4px solid #1B5EA0', borderRadius:'50%', margin:'24px auto 0' }} />
         </div>
       </div>
     );
   }
 
-  // ── ERROR ─────────────────────────────────────────────────
   if (error) {
     return (
       <div style={{ minHeight:'100vh', background:'#F0F4F8', display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
         <div style={{ textAlign:'center', maxWidth:400, width:'100%', padding:'28px 24px', background:'#fff', borderRadius:20, boxShadow:'0 4px 20px rgba(0,0,0,0.1)' }}>
           <div style={{ fontSize:48, marginBottom:14 }}>⚠️</div>
           <div style={{ fontSize:17, fontWeight:700, color:'#C0392B', marginBottom:8 }}>Gagal Terhubung ke Server</div>
-          <div style={{ fontSize:13, color:'#718096', marginBottom:16, lineHeight:1.7 }}>Pastikan server backend sudah berjalan.</div>
-          <div style={{ background:'#F8FAFC', border:'1px solid #E2E8F0', borderRadius:10, padding:'10px 14px', fontSize:12, fontFamily:'monospace', textAlign:'left', marginBottom:20, lineHeight:2 }}>
-            cd Downloads/desa-app-UTS/server<br/>node server.js
-          </div>
+          <div style={{ fontSize:13, color:'#718096', marginBottom:20 }}>Pastikan server backend sudah berjalan.</div>
           <button onClick={reload} style={{ padding:'12px 28px', fontSize:14, fontWeight:700, background:'#1B5EA0', color:'#fff', border:'none', borderRadius:10, cursor:'pointer', width:'100%' }}>
             🔄 Coba Lagi
           </button>
@@ -119,15 +119,12 @@ function AppInner() {
 
   return (
     <div className="app-layout">
-
-      {/* ── HEADER ── */}
+      {/* HEADER */}
       <header className="app-header">
         <button className="hamburger" onClick={()=>setSidebarOpen(!sidebarOpen)}>
           {sidebarOpen ? '✕' : '☰'}
         </button>
-
         <div style={{ width:38, height:38, background:'rgba(255,255,255,0.2)', borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, flexShrink:0 }}>🏛</div>
-
         <div style={{ flex:1, minWidth:0 }}>
           <div style={{ fontWeight:700, fontSize:14, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
             Sistem Informasi Desa {desa.namaDesa}
@@ -136,12 +133,9 @@ function AppInner() {
             Kec. {desa.kecamatan} · Kab. {desa.kabupaten} · {desa.provinsi}
           </div>
         </div>
-
         <div className="header-date" style={{ fontSize:11, fontWeight:600, opacity:0.85, marginRight:8, flexShrink:0 }}>
           {new Date().toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}
         </div>
-
-        {/* Avatar */}
         <div style={{ position:'relative', flexShrink:0 }}>
           <button onClick={()=>setShowProfile(!showProfile)}
             style={{ display:'flex', alignItems:'center', gap:8, background:'rgba(255,255,255,0.15)', border:'1px solid rgba(255,255,255,0.25)', borderRadius:10, padding:'6px 10px', cursor:'pointer', color:'#fff' }}>
@@ -152,26 +146,17 @@ function AppInner() {
             </div>
             <span style={{ fontSize:10, opacity:0.7 }}>▼</span>
           </button>
-
           {showProfile && (
             <div style={{ position:'absolute', right:0, top:'110%', background:'#fff', borderRadius:14, border:'1px solid #E2E8F0', boxShadow:'0 12px 40px rgba(0,0,0,0.18)', minWidth:240, maxWidth:'92vw', zIndex:500, overflow:'hidden' }}>
               <div style={{ padding:'16px 18px', background:'linear-gradient(135deg,#EBF3FC,#DBEAFE)', borderBottom:'1px solid #E2E8F0' }}>
                 <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                  <div style={{ width:42, height:42, borderRadius:10, background:'#1B5EA0', display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>{roleIcon}</div>
+                  <div style={{ width:42, height:42, borderRadius:10, background:'#1B5EA0', display:'flex', alignItems:'center', justifyContent:'center', fontSize:20 }}>{roleIcon}</div>
                   <div style={{ minWidth:0 }}>
                     <div style={{ fontWeight:700, fontSize:14, color:'#1A2332', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{currentUser?.nama}</div>
                     <div style={{ fontSize:11, color:'#4A5568' }}>{currentUser?.jabatan}</div>
                     <span style={{ fontSize:10, background: isKepala ? '#1B5EA0' : '#2D6A0F', color:'#fff', padding:'1px 7px', borderRadius:8, fontWeight:600 }}>{roleLabel}</span>
                   </div>
                 </div>
-              </div>
-              <div style={{ padding:'8px 16px', borderBottom:'1px solid #F1F5F9' }}>
-                {[['👤 Username',`@${currentUser?.username}`],['🪪 NIP/NIK',currentUser?.nip||'-'],['📱 No. HP',currentUser?.no_hp||'-']].map(([k,v])=>(
-                  <div key={k} style={{ display:'flex', justifyContent:'space-between', padding:'4px 0', fontSize:12 }}>
-                    <span style={{ color:'#718096' }}>{k}</span>
-                    <span style={{ fontWeight:600, color:'#1A2332', marginLeft:8 }}>{v}</span>
-                  </div>
-                ))}
               </div>
               <div style={{ padding:'8px 12px', borderBottom:'1px solid #F1F5F9' }}>
                 <button onClick={()=>{ setShowProfile(false); handleReload(); }}
@@ -191,19 +176,13 @@ function AppInner() {
       </header>
 
       {showProfile && <div style={{ position:'fixed', inset:0, zIndex:199 }} onClick={()=>setShowProfile(false)} />}
-
-      {/* Overlay mobile */}
-      {isMobile && sidebarOpen && (
-        <div className="sidebar-overlay" onClick={()=>setSidebarOpen(false)} />
-      )}
+      {isMobile && sidebarOpen && <div className="sidebar-overlay" onClick={()=>setSidebarOpen(false)} />}
 
       <div className="app-body">
-
-        {/* ── SIDEBAR ── */}
+        {/* SIDEBAR */}
         <aside className={`sidebar ${isMobile ? (sidebarOpen?'open':'') : 'open'}`}
           style={{ transform: isMobile && !sidebarOpen ? 'translateX(-100%)' : 'translateX(0)' }}>
 
-          {/* Badge role di sidebar */}
           <div style={{ margin:'0 12px 12px', padding:'8px 12px', background: isKepala ? '#EBF3FC' : '#EAF3DE', borderRadius:8, border:`1px solid ${isKepala ? '#B5D4F4' : '#A8D5A2'}`, fontSize:11, fontWeight:700, color: isKepala ? '#1B5EA0' : '#2D6A0F', textAlign:'center' }}>
             {isKepala ? '🏛 Mode Kepala Desa' : '👤 Mode Perangkat Desa'}
           </div>
@@ -212,7 +191,7 @@ function AppInner() {
 
           {NAV.map(n => {
             const active = page===n.id;
-            const badge  = (n.id==='surat' || n.id==='arsip') && suratMenunggu>0 ? suratMenunggu : null;
+            const badge  = (n.id==='surat'||n.id==='arsip') && suratMenunggu>0 ? suratMenunggu : null;
             return (
               <button key={n.id} onClick={()=>navigateTo(n.id)}
                 style={{ display:'flex', alignItems:'center', gap:10, width:'100%', margin:'2px 0', padding:'11px 16px', background:active?'linear-gradient(135deg,#EBF3FC,#DBEAFE)':'transparent', border:'none', textAlign:'left', cursor:'pointer', borderLeft:active?'4px solid #1B5EA0':'4px solid transparent', transition:'all 0.15s' }}
@@ -223,7 +202,7 @@ function AppInner() {
                   <div style={{ fontSize:13, fontWeight:active?700:500, color:active?'#1B5EA0':'#1A2332' }}>{n.label}</div>
                   <div style={{ fontSize:11, color:'#A0AEC0', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{n.desc}</div>
                 </div>
-                {badge && <span style={{ background:'#C0392B', color:'#fff', borderRadius:10, fontSize:10, padding:'2px 6px', fontWeight:700, flexShrink:0 }}>{badge}</span>}
+                {badge && <span style={{ background:'#C0392B', color:'#fff', borderRadius:10, fontSize:10, padding:'2px 6px', fontWeight:700 }}>{badge}</span>}
               </button>
             );
           })}
@@ -241,13 +220,12 @@ function AppInner() {
             </div>
           </button>
 
-          {/* Ringkasan */}
           <div style={{ margin:'14px 12px 0', padding:'12px', background:'#F8FAFC', borderRadius:10, border:'1px solid #E2E8F0' }}>
             <div style={{ fontSize:11, fontWeight:700, color:'#4A5568', marginBottom:8 }}>📊 Data Singkat</div>
             {[
-              {label:'Penduduk', value:`${state.penduduk.length} jiwa`,   color:'#1B5EA0'},
-              {label:'Arsip',    value:`${state.arsipSurat.length} surat`, color:'#534AB7'},
-              {label:'Antrian',  value:`${suratMenunggu} surat`,           color:suratMenunggu>0?'#C0392B':'#2D6A0F'},
+              {label:'Penduduk', value:`${state.penduduk.length} jiwa`,    color:'#1B5EA0'},
+              {label:'Arsip',    value:`${state.arsipSurat.length} surat`,  color:'#534AB7'},
+              {label:'Antrian',  value:`${suratMenunggu} surat`,            color:suratMenunggu>0?'#C0392B':'#2D6A0F'},
             ].map(item=>(
               <div key={item.label} style={{ display:'flex', justifyContent:'space-between', marginBottom:6, fontSize:12 }}>
                 <span style={{ color:'#718096' }}>{item.label}</span>
@@ -260,7 +238,7 @@ function AppInner() {
           </div>
         </aside>
 
-        {/* ── MAIN ── */}
+        {/* MAIN */}
         <main className="main-content" style={{ marginLeft: isMobile ? 0 : 'var(--sidebar-width)' }}>
           <div className="fade-in" key={page}>
             {pages[page] || pages.dashboard}

@@ -8,7 +8,6 @@ const pool = mysql.createPool(config.db);
 async function initDatabase() {
   let conn;
   try {
-    // Buat database jika belum ada
     const tempConn = await mysql.createConnection({
       host:     config.db.host,
       port:     config.db.port,
@@ -21,7 +20,6 @@ async function initDatabase() {
 
     conn = await pool.getConnection();
 
-    // ── BUAT TABEL ──────────────────────────────────────────
     await conn.execute(`
       CREATE TABLE IF NOT EXISTS pengaturan_desa (
         id          INT PRIMARY KEY DEFAULT 1,
@@ -51,7 +49,7 @@ async function initDatabase() {
         nip            VARCHAR(50),
         no_hp          VARCHAR(20),
         aktif          TINYINT(1) DEFAULT 1,
-        email_verified TINYINT(1) DEFAULT 0,
+        email_verified TINYINT(1) DEFAULT 1,
         otp_code       VARCHAR(6)  DEFAULT NULL,
         otp_expired    DATETIME    DEFAULT NULL,
         created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -128,15 +126,80 @@ async function initDatabase() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     `);
 
+    await conn.execute(`
+      CREATE TABLE IF NOT EXISTS bansos (
+        id            INT AUTO_INCREMENT PRIMARY KEY,
+        nama_program  VARCHAR(100) NOT NULL,
+        tahun         YEAR NOT NULL,
+        deskripsi     TEXT,
+        anggaran      BIGINT DEFAULT 0,
+        status        ENUM('Aktif','Selesai','Ditangguhkan') DEFAULT 'Aktif',
+        created_by    VARCHAR(100),
+        created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    `);
+
+    await conn.execute(`
+      CREATE TABLE IF NOT EXISTS penerima_bansos (
+        id          INT AUTO_INCREMENT PRIMARY KEY,
+        bansos_id   INT NOT NULL,
+        nik         VARCHAR(16) NOT NULL,
+        nama        VARCHAR(100) NOT NULL,
+        alamat      VARCHAR(255),
+        rt          VARCHAR(5),
+        rw          VARCHAR(5),
+        dusun       VARCHAR(20),
+        jumlah      BIGINT DEFAULT 0,
+        keterangan  TEXT,
+        created_by  VARCHAR(100),
+        created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (bansos_id) REFERENCES bansos(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    `);
+
+    await conn.execute(`
+      CREATE TABLE IF NOT EXISTS fasilitas (
+        id          INT AUTO_INCREMENT PRIMARY KEY,
+        nama        VARCHAR(100) NOT NULL,
+        kategori    ENUM('Gedung','Peralatan','Kendaraan','Lainnya') DEFAULT 'Gedung',
+        kondisi     ENUM('Baik','Rusak Ringan','Rusak Berat') DEFAULT 'Baik',
+        lokasi      VARCHAR(255),
+        deskripsi   TEXT,
+        tersedia    TINYINT(1) DEFAULT 1,
+        created_by  VARCHAR(100),
+        created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    `);
+
+    await conn.execute(`
+      CREATE TABLE IF NOT EXISTS booking_fasilitas (
+        id              INT AUTO_INCREMENT PRIMARY KEY,
+        fasilitas_id    INT NOT NULL,
+        nama_pemohon    VARCHAR(100) NOT NULL,
+        nik             VARCHAR(16),
+        keperluan       VARCHAR(255) NOT NULL,
+        tanggal_mulai   DATE NOT NULL,
+        tanggal_selesai DATE NOT NULL,
+        status          ENUM('Menunggu','Disetujui','Ditolak','Selesai') DEFAULT 'Menunggu',
+        catatan         TEXT,
+        diproses_oleh   VARCHAR(100),
+        created_by      VARCHAR(100),
+        created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (fasilitas_id) REFERENCES fasilitas(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    `);
+
     console.log('✅ Semua tabel berhasil dibuat');
 
-    // ── ALTER TABLE — tambah kolom jika belum ada ────────────
     const alterColumns = [
-      { sql: 'ALTER TABLE penduduk ADD COLUMN no_kk VARCHAR(16) AFTER nik',                   msg: 'Kolom no_kk' },
-      { sql: 'ALTER TABLE users ADD COLUMN email VARCHAR(100) UNIQUE AFTER nama',              msg: 'Kolom email' },
-      { sql: 'ALTER TABLE users ADD COLUMN email_verified TINYINT(1) DEFAULT 0',              msg: 'Kolom email_verified' },
-      { sql: 'ALTER TABLE users ADD COLUMN otp_code VARCHAR(6) DEFAULT NULL',                 msg: 'Kolom otp_code' },
-      { sql: 'ALTER TABLE users ADD COLUMN otp_expired DATETIME DEFAULT NULL',                msg: 'Kolom otp_expired' },
+      { sql: 'ALTER TABLE penduduk ADD COLUMN no_kk VARCHAR(16) AFTER nik', msg: 'Kolom no_kk' },
+      { sql: 'ALTER TABLE users ADD COLUMN email VARCHAR(100) UNIQUE AFTER nama', msg: 'Kolom email' },
+      { sql: 'ALTER TABLE users ADD COLUMN email_verified TINYINT(1) DEFAULT 1', msg: 'Kolom email_verified' },
+      { sql: 'ALTER TABLE users ADD COLUMN otp_code VARCHAR(6) DEFAULT NULL', msg: 'Kolom otp_code' },
+      { sql: 'ALTER TABLE users ADD COLUMN otp_expired DATETIME DEFAULT NULL', msg: 'Kolom otp_expired' },
     ];
 
     for (const col of alterColumns) {
@@ -146,7 +209,6 @@ async function initDatabase() {
       } catch(e) { /* kolom sudah ada, skip */ }
     }
 
-    // ── BUAT ADMIN DEFAULT JIKA BELUM ADA ───────────────────
     const [adminExist] = await conn.execute('SELECT id FROM users WHERE username = ?', ['admin']);
     if (adminExist.length === 0) {
       const hash = await bcrypt.hash('admin123', 10);
@@ -154,21 +216,19 @@ async function initDatabase() {
         'INSERT INTO users (nama, email, username, password, role, jabatan, nip, no_hp, aktif, email_verified) VALUES (?,?,?,?,?,?,?,?,1,1)',
         ['Administrator', 'admin@desacikulak.id', 'admin', hash, 'kepala_desa', 'Kepala Desa', '-', '-']
       );
-      console.log('✅ Akun admin default berhasil dibuat (username: admin, password: admin123)');
+      console.log('✅ Akun admin default berhasil dibuat');
     }
 
-    // ── BUAT PENGATURAN DESA JIKA BELUM ADA ─────────────────
     const [pgExist] = await conn.execute('SELECT id FROM pengaturan_desa WHERE id = 1');
     if (pgExist.length === 0) {
       await conn.execute(`
-        INSERT INTO pengaturan_desa (id, nama_desa, kecamatan, kabupaten, provinsi, kode_pos, alamat, telp, kepala_desa, nip, sekretaris)
-        VALUES (1, 'Cikulak', 'Waled', 'Cirebon', 'Jawa Barat', '45188', 'Jl. Cikulak No. 1', '-', 'H. Edi Purnama, S.AP.M.Si', '-', '-')
+        INSERT INTO pengaturan_desa (id,nama_desa,kecamatan,kabupaten,provinsi,kode_pos,alamat,telp,kepala_desa,nip,sekretaris)
+        VALUES (1,'Cikulak','Waled','Cirebon','Jawa Barat','45188','Jl. Cikulak No. 1','-','H. Edi Purnama, S.AP.M.Si','-','-')
       `);
       console.log('✅ Pengaturan desa berhasil dibuat');
     }
 
     console.log('✅ Database MySQL siap digunakan!\n');
-
   } catch (err) {
     console.error('❌ Error database:', err.message);
     process.exit(1);
