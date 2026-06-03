@@ -71,7 +71,7 @@ router.post('/register', async (req, res) => {
       return res.status(409).json({ ok: false, msg: 'Username sudah digunakan' });
 
     const hash = await bcrypt.hash(password, 10);
-    const aktif = role === 'perangkat_desa' ? 1 : 0;
+    const aktif = 0; // semua akun baru harus diaktifkan admin dulu
 
     await pool.execute(
       `INSERT INTO users (nama, username, password, role, jabatan, nip, no_hp, aktif, email_verified)
