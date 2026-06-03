@@ -3,7 +3,6 @@ import { authAPI, setToken, removeToken } from '../utils/api';
 
 const AuthContext = createContext();
 
-// Ambil session dari sessionStorage
 function loadSession() {
   try {
     const saved = sessionStorage.getItem('desaCikulak_user');
@@ -21,13 +20,11 @@ export function AuthProvider({ children }) {
   const isKepala  = currentUser?.role === 'kepala_desa';
   const isLoggedIn = !!currentUser;
 
-  // ── LOGIN ─────────────────────────────────────────────────
   const login = async (username, password) => {
     setLoginError('');
     setLoading(true);
     try {
       const res = await authAPI.login({ username, password });
-      // Simpan token & user ke sessionStorage
       setToken(res.token);
       sessionStorage.setItem('desaCikulak_user', JSON.stringify(res.user));
       setCurrentUser(res.user);
@@ -40,7 +37,6 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // ── LOGOUT ────────────────────────────────────────────────
   const logout = () => {
     removeToken();
     sessionStorage.removeItem('desaCikulak_user');
@@ -48,7 +44,6 @@ export function AuthProvider({ children }) {
     setUsers([]);
   };
 
-  // ── REGISTER ──────────────────────────────────────────────
   const register = async (data) => {
     try {
       const res = await authAPI.register(data);
@@ -58,7 +53,6 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // ── KELOLA USER (hanya kepala desa) ──────────────────────
   const loadUsers = async () => {
     if (!isKepala) return;
     try {
@@ -67,25 +61,11 @@ export function AuthProvider({ children }) {
     } catch (e) {}
   };
 
-  const aktivasiUser = async (id) => {
-    await authAPI.aktifkan(id);
-    await loadUsers();
-  };
+  const aktivasiUser = async (id) => { await authAPI.aktifkan(id); await loadUsers(); };
+  const nonaktifUser = async (id) => { await authAPI.nonaktifkan(id); await loadUsers(); };
+  const hapusUser    = async (id) => { await authAPI.hapusUser(id); await loadUsers(); };
 
-  const nonaktifUser = async (id) => {
-    await authAPI.nonaktifkan(id);
-    await loadUsers();
-  };
-
-  const hapusUser = async (id) => {
-    await authAPI.hapusUser(id);
-    await loadUsers();
-  };
-
-  // Load users saat pertama login sebagai kepala desa
-  useEffect(() => {
-    if (isKepala) loadUsers();
-  }, [isKepala]);
+  useEffect(() => { if (isKepala) loadUsers(); }, [isKepala]);
 
   return (
     <AuthContext.Provider value={{
