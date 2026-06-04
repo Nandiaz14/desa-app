@@ -1,9 +1,19 @@
-const express = require('express');
-const router  = express.Router();
-const bcrypt  = require('bcryptjs');
-const jwt     = require('jsonwebtoken');
-const { pool } = require('../database');
-const config   = require('../config');
+const express    = require('express');
+const router     = express.Router();
+const bcrypt     = require('bcryptjs');
+const jwt        = require('jsonwebtoken');
+const rateLimit  = require('express-rate-limit');
+const { pool }   = require('../database');
+const config     = require('../config');
+
+// Rate limiter — max 10 percobaan login per 15 menit
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { ok: false, msg: 'Terlalu banyak percobaan login. Coba lagi dalam 15 menit.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 function verifyToken(req, res, next) {
   const auth = req.headers['authorization'];
@@ -23,8 +33,7 @@ function onlyKepala(req, res, next) {
   next();
 }
 
-// POST /api/auth/login
-router.post('/login', async (req, res) => {
+router.post('/login', loginLimiter, async (req, res) => {
   try {
     const { username, password } = req.body;
     if (!username || !password)
@@ -54,7 +63,6 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// POST /api/auth/register
 router.post('/register', async (req, res) => {
   try {
     const { nama, username, password, konfirmasi, role, jabatan, nip, no_hp } = req.body;
@@ -71,65 +79,47 @@ router.post('/register', async (req, res) => {
       return res.status(409).json({ ok: false, msg: 'Username sudah digunakan' });
 
     const hash = await bcrypt.hash(password, 10);
-    const aktif = 0; // semua akun baru harus diaktifkan admin dulu
+    const aktif = 0;
 
     await pool.execute(
-      `INSERT INTO users (nama, username, password, role, jabatan, nip, no_hp, aktif, email_verified)
-       VALUES (?,?,?,?,?,?,?,?,1)`,
+      'INSERT INTO users (nama, username, password, role, jabatan, nip, no_hp, aktif, email_verified) VALUES (?,?,?,?,?,?,?,?,1)',
       [nama, username, hash, role || 'perangkat_desa', jabatan || '-', nip || '-', no_hp || '-', aktif]
     );
 
-    res.json({
-      ok: true,
-      msg: aktif
-        ? 'Akun berhasil dibuat! Silakan login.'
-        : 'Akun berhasil dibuat! Menunggu aktivasi oleh Kepala Desa.',
-    });
+    res.json({ ok: true, msg: aktif ? 'Akun berhasil dibuat! Silakan login.' : 'Akun berhasil dibuat! Menunggu aktivasi oleh Kepala Desa.' });
   } catch (err) {
     res.status(500).json({ ok: false, msg: err.message });
   }
 });
 
-// GET /api/auth/users
 router.get('/users', verifyToken, onlyKepala, async (req, res) => {
   try {
     const [rows] = await pool.execute(
       'SELECT id, nama, username, role, jabatan, nip, no_hp, aktif, created_at FROM users ORDER BY created_at DESC'
     );
     res.json({ ok: true, data: rows });
-  } catch (err) {
-    res.status(500).json({ ok: false, msg: err.message });
-  }
+  } catch (err) { res.status(500).json({ ok: false, msg: err.message }); }
 });
 
-// PATCH /api/auth/users/:id/aktifkan
 router.patch('/users/:id/aktifkan', verifyToken, onlyKepala, async (req, res) => {
   try {
     await pool.execute('UPDATE users SET aktif = 1 WHERE id = ?', [req.params.id]);
     res.json({ ok: true, msg: 'Akun berhasil diaktifkan' });
-  } catch (err) {
-    res.status(500).json({ ok: false, msg: err.message });
-  }
+  } catch (err) { res.status(500).json({ ok: false, msg: err.message }); }
 });
 
-// PATCH /api/auth/users/:id/nonaktifkan
 router.patch('/users/:id/nonaktifkan', verifyToken, onlyKepala, async (req, res) => {
   try {
     await pool.execute('UPDATE users SET aktif = 0 WHERE id = ?', [req.params.id]);
     res.json({ ok: true, msg: 'Akun berhasil dinonaktifkan' });
-  } catch (err) {
-    res.status(500).json({ ok: false, msg: err.message });
-  }
+  } catch (err) { res.status(500).json({ ok: false, msg: err.message }); }
 });
 
-// DELETE /api/auth/users/:id
 router.delete('/users/:id', verifyToken, onlyKepala, async (req, res) => {
   try {
     await pool.execute('DELETE FROM users WHERE id = ?', [req.params.id]);
     res.json({ ok: true, msg: 'Akun berhasil dihapus' });
-  } catch (err) {
-    res.status(500).json({ ok: false, msg: err.message });
-  }
+  } catch (err) { res.status(500).json({ ok: false, msg: err.message }); }
 });
 
 module.exports = { router, verifyToken, onlyKepala };

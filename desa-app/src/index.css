@@ -214,3 +214,76 @@ input:focus, select:focus, textarea:focus {
   .main-content { margin: 0 !important; }
   body { background: #fff; }
 }
+
+/* ── SHIMMER SKELETON ── */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+/* ── SCROLLBAR CUSTOM ── */
+::-webkit-scrollbar       { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #F1F5F9; border-radius: 4px; }
+::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+
+/* ── SMOOTH TRANSITIONS ── */
+* { transition: background-color 0.15s ease, border-color 0.15s ease; }
+button, a { transition: all 0.15s ease !important; }
+
+/* ── HOVER EFEK TOMBOL ── */
+button:not(:disabled):hover { filter: brightness(0.95); }
+
+/* ── CARD HOVER ── */
+.card-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1) !important;
+}
+
+/* ── TABLE ROW HOVER ── */
+tbody tr { transition: background 0.1s ease; }
+
+/* ── MODAL ANIMATION ── */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── BADGE PULSE ── */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.7; }
+}
+.badge-pulse { animation: pulse 2s infinite; }
+
+/* ── PAGE TRANSITION ── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fadeIn 0.25s ease; }
+
+/* ── GRADIENT TEXT ── */
+.gradient-text {
+  background: linear-gradient(135deg, #1B5EA0, #1565C0);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── GLASS EFFECT ── */
+.glass {
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* ── PRINT ── */
+@media print {
+  .sidebar, .app-header, .hamburger, .no-print { display: none !important; }
+  .main-content { margin: 0 !important; }
+  body { background: #fff; }
+}
