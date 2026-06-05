@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
@@ -40,13 +40,19 @@ export default function DataPenduduk({ readOnly = false }) {
   const [importData, setImportData] = useState([]);
   const [importing, setImporting]   = useState(false);
   const [groupByKK, setGroupByKK]   = useState(false);
+  const [isMobile, setIsMobile]     = useState(window.innerWidth <= 768);
   const importRef = useRef();
+
+  useEffect(() => {
+    const handle = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handle);
+    return () => window.removeEventListener('resize', handle);
+  }, []);
 
   const sorted = [...state.penduduk].sort((a,b) => {
     const da = DUSUN_LIST.indexOf(a.dusun), db = DUSUN_LIST.indexOf(b.dusun);
     if (da!==db) return da-db;
     if (parseInt(a.rt)!==parseInt(b.rt)) return parseInt(a.rt)-parseInt(b.rt);
-    if (a.no_kk && b.no_kk && a.no_kk !== b.no_kk) return a.no_kk.localeCompare(b.no_kk);
     return a.nama.localeCompare(b.nama);
   });
 
@@ -85,50 +91,39 @@ export default function DataPenduduk({ readOnly = false }) {
     if (state.penduduk.find(p=>p.nik===form.nik&&p.id!==editData?.id)) {
       setError('NIK sudah terdaftar.'); return;
     }
-    const t = toast.loading(editData ? 'Menyimpan perubahan...' : 'Menambah penduduk...');
+    const t = toast.loading(editData ? 'Menyimpan...' : 'Menambah penduduk...');
     try {
       if (editData) await dispatch({ type:'UPDATE_PENDUDUK', payload:{...form,id:editData.id} });
       else          await dispatch({ type:'TAMBAH_PENDUDUK', payload:form });
       toast.dismiss(t);
-      toast.success(editData ? 'Data penduduk berhasil diperbarui! ✅' : 'Penduduk baru berhasil ditambahkan! ✅');
+      toast.success(editData ? 'Data berhasil diperbarui! ✅' : 'Penduduk berhasil ditambahkan! ✅');
       setShowModal(false); setError('');
-    } catch(e) {
-      toast.dismiss(t);
-      toast.error('Gagal menyimpan data: '+e.message);
-    }
+    } catch(e) { toast.dismiss(t); toast.error('Gagal: '+e.message); }
   };
 
   const hapus = async id => {
-    if (!window.confirm('Yakin ingin menghapus data penduduk ini?')) return;
-    const t = toast.loading('Menghapus data...');
+    if (!window.confirm('Yakin ingin menghapus?')) return;
+    const t = toast.loading('Menghapus...');
     try {
       await dispatch({ type:'HAPUS_PENDUDUK', payload:id });
-      toast.dismiss(t);
-      toast.success('Data penduduk berhasil dihapus! 🗑');
-    } catch(e) {
-      toast.dismiss(t);
-      toast.error('Gagal menghapus: '+e.message);
-    }
+      toast.dismiss(t); toast.success('Data berhasil dihapus! 🗑');
+    } catch(e) { toast.dismiss(t); toast.error('Gagal: '+e.message); }
   };
 
   const simpanRiwayat = async () => {
     if (!formRiwayat.nama||!formRiwayat.tanggal) return;
-    const t = toast.loading('Menyimpan riwayat...');
+    const t = toast.loading('Menyimpan...');
     try {
       await dispatch({ type:'TAMBAH_RIWAYAT', payload:formRiwayat });
-      toast.dismiss(t);
-      toast.success('Riwayat perubahan berhasil dicatat! ✅');
+      toast.dismiss(t); toast.success('Riwayat berhasil dicatat! ✅');
       setShowRiwayatModal(false);
       setFormRiwayat({ jenis:'Pindah Masuk', nama:'', nik:'', tanggal: getTodayStr(), keterangan:'' });
-    } catch(e) {
-      toast.dismiss(t);
-      toast.error('Gagal menyimpan riwayat');
-    }
+    } catch(e) { toast.dismiss(t); toast.error('Gagal'); }
   };
 
   const exportExcel = () => {
-    if (state.penduduk.length===0) { toast.error('Tidak ada data penduduk untuk diekspor!'); return; }
-    const t = toast.loading('Menyiapkan file Excel...');
+    if (state.penduduk.length===0) { toast.error('Tidak ada data!'); return; }
+    const t = toast.loading('Menyiapkan Excel...');
     try {
       const dataExport = state.penduduk.map((p,i) => ({
         'No': i+1, 'NIK': p.nik, 'No. KK': p.no_kk||'', 'Nama Lengkap': p.nama,
@@ -139,48 +134,37 @@ export default function DataPenduduk({ readOnly = false }) {
         'Tanggal Masuk': p.tanggalMasuk, 'Keterangan': p.keterangan||'',
       }));
       const ws = XLSX.utils.json_to_sheet(dataExport);
-      ws['!cols'] = [{wch:4},{wch:18},{wch:18},{wch:22},{wch:14},{wch:14},{wch:13},{wch:10},{wch:12},{wch:18},{wch:14},{wch:22},{wch:6},{wch:6},{wch:10},{wch:12},{wch:14},{wch:20}];
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'Data Penduduk');
-      DUSUN_LIST.forEach(d => {
-        const dData = state.penduduk.filter(p=>p.dusun===d).map((p,i) => ({
-          'No': i+1, 'NIK': p.nik, 'No. KK': p.no_kk||'', 'Nama': p.nama,
-          'TTL': `${p.tempatLahir}, ${p.tanggalLahir}`, 'Jenis Kelamin': p.jenisKelamin,
-          'Pekerjaan': p.pekerjaan, 'RT': p.rt, 'RW': p.rw, 'Status': p.status,
-        }));
-        if (dData.length>0) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dData), d);
-      });
       const buf = XLSX.write(wb, { bookType:'xlsx', type:'array' });
-      saveAs(new Blob([buf], { type:'application/octet-stream' }), `Data_Penduduk_Desa_Cikulak_${new Date().toISOString().split('T')[0]}.xlsx`);
-      toast.dismiss(t);
-      toast.success('File Excel berhasil didownload! 📥');
-    } catch(e) { toast.dismiss(t); toast.error('Gagal export Excel: '+e.message); }
+      saveAs(new Blob([buf], { type:'application/octet-stream' }), `Data_Penduduk_${new Date().toISOString().split('T')[0]}.xlsx`);
+      toast.dismiss(t); toast.success('Excel berhasil didownload! 📥');
+    } catch(e) { toast.dismiss(t); toast.error('Gagal: '+e.message); }
   };
 
   const exportTemplate = () => {
     const template = [{ 'NIK':'3209010101900001', 'No. KK':'3209010101900000', 'Nama Lengkap':'Contoh Nama', 'Tempat Lahir':'Cirebon', 'Tanggal Lahir':'1990-01-01', 'Jenis Kelamin':'Laki-laki', 'Agama':'Islam', 'Pendidikan':'SMA', 'Pekerjaan':'Petani', 'Status Kawin':'Kawin', 'Alamat':'Kp. Cikulak', 'RT':'001', 'RW':'001', 'Dusun':'Dusun 1', 'Status Penduduk':'Tetap', 'Tanggal Masuk':'2020-01-01', 'Keterangan':'' }];
     const ws = XLSX.utils.json_to_sheet(template);
-    ws['!cols'] = Array(17).fill({wch:16});
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Template');
     const buf = XLSX.write(wb, { bookType:'xlsx', type:'array' });
     saveAs(new Blob([buf],{type:'application/octet-stream'}), 'Template_Import_Penduduk.xlsx');
-    toast.success('Template Excel berhasil didownload! 📋');
+    toast.success('Template berhasil didownload!');
   };
 
   const handleFileImport = e => {
     const file = e.target.files[0];
     if (!file) return;
-    const t = toast.loading('Membaca file Excel...');
+    const t = toast.loading('Membaca file...');
     const reader = new FileReader();
     reader.onload = evt => {
       try {
         const wb = XLSX.read(evt.target.result, { type:'binary' });
         const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
-        if (data.length===0) { toast.dismiss(t); toast.error('File Excel kosong!'); return; }
+        if (data.length===0) { toast.dismiss(t); toast.error('File kosong!'); return; }
         setImportData(data); setShowImportModal(true);
         toast.dismiss(t); toast.success(`${data.length} data siap diimport!`);
-      } catch(err) { toast.dismiss(t); toast.error('File Excel tidak valid!'); }
+      } catch { toast.dismiss(t); toast.error('File tidak valid!'); }
     };
     reader.readAsBinaryString(file);
     e.target.value = '';
@@ -203,11 +187,11 @@ export default function DataPenduduk({ readOnly = false }) {
           status: String(row['Status Penduduk']||'Tetap').trim(), tanggalMasuk: String(row['Tanggal Masuk']||getTodayStr()).trim(),
           keterangan: String(row['Keterangan']||'').trim(),
         }}); sukses++;
-      } catch(e) { gagal++; }
+      } catch { gagal++; }
     }
     toast.dismiss(t);
     if (sukses>0) toast.success(`✅ ${sukses} data berhasil diimport!`);
-    if (gagal>0)  toast.error(`❌ ${gagal} data gagal (mungkin NIK duplikat)`);
+    if (gagal>0)  toast.error(`❌ ${gagal} data gagal`);
     setImporting(false); setShowImportModal(false); setImportData([]);
   };
 
@@ -216,122 +200,96 @@ export default function DataPenduduk({ readOnly = false }) {
   const maxPekerjaan  = Math.max(...statPekerjaan.map(s=>s.nilai),1);
 
   const tabs = [
-    { id:'daftar',    label:'Daftar Penduduk' },
-    { id:'riwayat',   label:'Riwayat Perubahan' },
-    { id:'statistik', label:'Statistik' },
+    { id:'daftar',    label:'👥 Daftar' },
+    { id:'riwayat',   label:'📋 Riwayat' },
+    { id:'statistik', label:'📊 Statistik' },
   ];
 
-  // ── TABEL PENDUDUK ────────────────────────────────────────
-  const TabelPenduduk = ({ list }) => {
-    if (groupByKK) {
-      const kkGroups = {};
-      list.forEach(p => {
-        const kk = p.no_kk || 'Tanpa KK';
-        if (!kkGroups[kk]) kkGroups[kk] = [];
-        kkGroups[kk].push(p);
-      });
-      return (
-        <div>
-          {Object.entries(kkGroups).map(([kk, members]) => (
-            <div key={kk} style={{ marginBottom: 8 }}>
-              <div style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 12px', background:'#EBF3FC', borderBottom:'1px solid #B5D4F4' }}>
-                <span style={{ fontSize:13, fontWeight:700, color:'#1B5EA0' }}>🏠 No. KK: {kk}</span>
-                <span style={{ fontSize:11, color:'#718096' }}>— {members.length} anggota</span>
-              </div>
-              <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13, minWidth:580 }}>
-                <thead>
-                  <tr style={{ background:'#F8FAFC' }}>
-                    {['No','NIK','Nama Lengkap','Umur/TTL','Pekerjaan','RT/RW','Status','Aksi'].map((h,i)=>(
-                      <th key={i} style={{ textAlign:'left', padding:'9px 12px', fontSize:11, fontWeight:700, color:'#4A5568', borderBottom:'1px solid #E2E8F0', whiteSpace:'nowrap' }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {members.map((p,idx)=>(
-                    <tr key={p.id} style={{ borderBottom:'1px solid #F1F5F9' }}
-                      onMouseEnter={e=>e.currentTarget.style.background='#FAFBFC'}
-                      onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-                      <td style={{ padding:'9px 12px', color:'#A0AEC0', fontSize:12, fontWeight:600 }}>{idx+1}</td>
-                      <td style={{ padding:'9px 12px', fontFamily:'monospace', fontSize:11, color:'#718096' }}>{p.nik}</td>
-                      <td style={{ padding:'9px 12px' }}>
-                        <div style={{ fontWeight:700, fontSize:13 }}>{p.nama}</div>
-                        <div style={{ fontSize:11, color:'#A0AEC0' }}>{p.agama}</div>
-                      </td>
-                      <td style={{ padding:'9px 12px' }}>
-                        <div style={{ fontWeight:600, fontSize:13 }}>{hitungUmur(p.tanggalLahir)} th</div>
-                        <div style={{ fontSize:11, color:'#718096' }}>{p.tempatLahir}</div>
-                      </td>
-                      <td style={{ padding:'9px 12px', fontSize:13, color:'#4A5568' }}>{p.pekerjaan}</td>
-                      <td style={{ padding:'9px 12px', fontSize:12 }}>
-                        <div style={{ fontWeight:600 }}>RT {p.rt}</div>
-                        <div style={{ color:'#718096' }}>RW {p.rw}</div>
-                      </td>
-                      <td style={{ padding:'9px 12px' }}>
-                        <Badge type={p.status==='Baru'?'warning':'success'}>{p.status}</Badge>
-                      </td>
-                      <td style={{ padding:'9px 12px', whiteSpace:'nowrap' }}>
-                        <div style={{ display:'flex', gap:4 }}>
-                          <Btn onClick={()=>setShowDetail(p)} size="sm" style={{ fontSize:11, padding:'4px 8px' }}>👁</Btn>
-                          {!readOnly && <Btn onClick={()=>bukaEdit(p)} variant="soft" size="sm" style={{ fontSize:11, padding:'4px 8px' }}>✏</Btn>}
-                          {!readOnly && <Btn onClick={()=>hapus(p.id)} variant="danger" size="sm" style={{ fontSize:11, padding:'4px 8px' }}>🗑</Btn>}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ))}
+  // ── CARD MOBILE PENDUDUK ──────────────────────────────
+  const CardPenduduk = ({ p }) => (
+    <div style={{
+      background:'#fff', borderRadius:14, border:'1px solid #E2E8F0',
+      padding:'14px 16px', boxShadow:'0 1px 4px rgba(0,0,0,0.06)',
+      marginBottom:10,
+    }}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:10 }}>
+        <div style={{ flex:1, minWidth:0 }}>
+          <div style={{ fontWeight:700, fontSize:15, marginBottom:2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.nama}</div>
+          <div style={{ fontSize:11, color:'#718096', fontFamily:'monospace' }}>{p.nik}</div>
         </div>
-      );
-    }
+        <Badge type={p.status==='Baru'?'warning':'success'}>{p.status}</Badge>
+      </div>
 
-    return (
-      <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13, minWidth:580 }}>
-        <thead>
-          <tr style={{ background:'#F8FAFC' }}>
-            {['No','NIK','No. KK','Nama Lengkap','Umur/TTL','Pekerjaan','RT/RW','Status','Aksi'].map((h,i)=>(
-              <th key={i} style={{ textAlign:'left', padding:'9px 12px', fontSize:11, fontWeight:700, color:'#4A5568', borderBottom:'1px solid #E2E8F0', whiteSpace:'nowrap' }}>{h}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {list.map((p,idx)=>(
-            <tr key={p.id} style={{ borderBottom:'1px solid #F1F5F9' }}
-              onMouseEnter={e=>e.currentTarget.style.background='#FAFBFC'}
-              onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-              <td style={{ padding:'9px 12px', color:'#A0AEC0', fontSize:12, fontWeight:600 }}>{idx+1}</td>
-              <td style={{ padding:'9px 12px', fontFamily:'monospace', fontSize:11, color:'#718096' }}>{p.nik}</td>
-              <td style={{ padding:'9px 12px', fontFamily:'monospace', fontSize:11, color:'#718096' }}>{p.no_kk||'-'}</td>
-              <td style={{ padding:'9px 12px' }}>
-                <div style={{ fontWeight:700, fontSize:13 }}>{p.nama}</div>
-                <div style={{ fontSize:11, color:'#A0AEC0' }}>{p.agama}</div>
-              </td>
-              <td style={{ padding:'9px 12px' }}>
-                <div style={{ fontWeight:600, fontSize:13 }}>{hitungUmur(p.tanggalLahir)} th</div>
-                <div style={{ fontSize:11, color:'#718096' }}>{p.tempatLahir}</div>
-              </td>
-              <td style={{ padding:'9px 12px', fontSize:13, color:'#4A5568' }}>{p.pekerjaan}</td>
-              <td style={{ padding:'9px 12px', fontSize:12 }}>
-                <div style={{ fontWeight:600 }}>RT {p.rt}</div>
-                <div style={{ color:'#718096' }}>RW {p.rw}</div>
-              </td>
-              <td style={{ padding:'9px 12px' }}>
-                <Badge type={p.status==='Baru'?'warning':'success'}>{p.status}</Badge>
-              </td>
-              <td style={{ padding:'9px 12px', whiteSpace:'nowrap' }}>
-                <div style={{ display:'flex', gap:4 }}>
-                  <Btn onClick={()=>setShowDetail(p)} size="sm" style={{ fontSize:11, padding:'4px 8px' }}>👁</Btn>
-                  {!readOnly && <Btn onClick={()=>bukaEdit(p)} variant="soft" size="sm" style={{ fontSize:11, padding:'4px 8px' }}>✏</Btn>}
-                  {!readOnly && <Btn onClick={()=>hapus(p.id)} variant="danger" size="sm" style={{ fontSize:11, padding:'4px 8px' }}>🗑</Btn>}
-                </div>
-              </td>
-            </tr>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'6px 16px', marginBottom:12 }}>
+        {[
+          ['🎂 Umur', `${hitungUmur(p.tanggalLahir)} tahun`],
+          ['💼 Pekerjaan', p.pekerjaan],
+          ['🕌 Agama', p.agama],
+          ['📍 RT/RW', `RT ${p.rt} / RW ${p.rw}`],
+          ['🏘 Dusun', p.dusun],
+          ['💍 Status', p.statusKawin],
+        ].map(([label, val]) => (
+          <div key={label}>
+            <div style={{ fontSize:10, color:'#A0AEC0', marginBottom:1 }}>{label}</div>
+            <div style={{ fontSize:12, fontWeight:600, color:'#1A2332', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{val||'-'}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ display:'flex', gap:6, borderTop:'1px solid #F1F5F9', paddingTop:10 }}>
+        <Btn onClick={()=>setShowDetail(p)} size="sm" style={{ flex:1, justifyContent:'center', fontSize:11 }}>👁 Detail</Btn>
+        {!readOnly && <Btn onClick={()=>bukaEdit(p)} variant="soft" size="sm" style={{ flex:1, justifyContent:'center', fontSize:11 }}>✏ Edit</Btn>}
+        {!readOnly && <Btn onClick={()=>hapus(p.id)} variant="danger" size="sm" style={{ flex:1, justifyContent:'center', fontSize:11 }}>🗑 Hapus</Btn>}
+      </div>
+    </div>
+  );
+
+  // ── TABEL DESKTOP ─────────────────────────────────────
+  const TabelDesktop = ({ list }) => (
+    <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13, minWidth:580 }}>
+      <thead>
+        <tr style={{ background:'#F8FAFC' }}>
+          {['No','NIK','No. KK','Nama Lengkap','Umur/TTL','Pekerjaan','RT/RW','Status','Aksi'].map((h,i)=>(
+            <th key={i} style={{ textAlign:'left', padding:'10px 12px', fontSize:11, fontWeight:700, color:'#4A5568', borderBottom:'2px solid #E2E8F0', whiteSpace:'nowrap' }}>{h}</th>
           ))}
-        </tbody>
-      </table>
-    );
-  };
+        </tr>
+      </thead>
+      <tbody>
+        {list.map((p,idx)=>(
+          <tr key={p.id} style={{ borderBottom:'1px solid #F1F5F9' }}
+            onMouseEnter={e=>e.currentTarget.style.background='#FAFBFC'}
+            onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+            <td style={{ padding:'10px 12px', color:'#A0AEC0', fontSize:12, fontWeight:600 }}>{idx+1}</td>
+            <td style={{ padding:'10px 12px', fontFamily:'monospace', fontSize:11, color:'#718096' }}>{p.nik}</td>
+            <td style={{ padding:'10px 12px', fontFamily:'monospace', fontSize:11, color:'#718096' }}>{p.no_kk||'-'}</td>
+            <td style={{ padding:'10px 12px' }}>
+              <div style={{ fontWeight:700, fontSize:13 }}>{p.nama}</div>
+              <div style={{ fontSize:11, color:'#A0AEC0' }}>{p.agama}</div>
+            </td>
+            <td style={{ padding:'10px 12px' }}>
+              <div style={{ fontWeight:600, fontSize:13 }}>{hitungUmur(p.tanggalLahir)} th</div>
+              <div style={{ fontSize:11, color:'#718096' }}>{p.tempatLahir}</div>
+            </td>
+            <td style={{ padding:'10px 12px', fontSize:13, color:'#4A5568' }}>{p.pekerjaan}</td>
+            <td style={{ padding:'10px 12px', fontSize:12 }}>
+              <div style={{ fontWeight:600 }}>RT {p.rt}</div>
+              <div style={{ color:'#718096' }}>RW {p.rw}</div>
+            </td>
+            <td style={{ padding:'10px 12px' }}>
+              <Badge type={p.status==='Baru'?'warning':'success'}>{p.status}</Badge>
+            </td>
+            <td style={{ padding:'10px 12px', whiteSpace:'nowrap' }}>
+              <div style={{ display:'flex', gap:4 }}>
+                <Btn onClick={()=>setShowDetail(p)} size="sm" style={{ fontSize:11, padding:'4px 8px' }}>👁</Btn>
+                {!readOnly && <Btn onClick={()=>bukaEdit(p)} variant="soft" size="sm" style={{ fontSize:11, padding:'4px 8px' }}>✏</Btn>}
+                {!readOnly && <Btn onClick={()=>hapus(p.id)} variant="danger" size="sm" style={{ fontSize:11, padding:'4px 8px' }}>🗑</Btn>}
+              </div>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
 
   return (
     <div className="page-container">
@@ -347,7 +305,6 @@ export default function DataPenduduk({ readOnly = false }) {
         </div>
       </div>
 
-      {/* Badge readOnly */}
       {readOnly && (
         <div style={{ marginBottom:14, padding:'8px 16px', background:'#EBF3FC', borderRadius:10, border:'1px solid #B5D4F4', fontSize:12, color:'#1B5EA0', fontWeight:600 }}>
           🏛 Mode Admin — Anda hanya dapat melihat data penduduk
@@ -359,140 +316,163 @@ export default function DataPenduduk({ readOnly = false }) {
       {/* ═══ DAFTAR ═══ */}
       {tab==='daftar' && (
         <>
+          {/* Search */}
           <div style={{ position:'relative', marginBottom:12 }}>
             <span style={{ position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', fontSize:16, color:'#A0AEC0' }}>🔍</span>
             <input value={search} onChange={e=>{ setSearch(e.target.value); if(e.target.value.trim()) expandAll(); }}
-              placeholder="Cari nama, NIK, No. KK, pekerjaan, atau nomor RT..."
+              placeholder="Cari nama, NIK, No. KK, pekerjaan..."
               style={{ width:'100%', border:'1.5px solid #CBD5E1', borderRadius:10, padding:'11px 16px 11px 44px', fontSize:14, fontFamily:'inherit', background:'#fff', outline:'none', boxSizing:'border-box' }}
               onFocus={e=>e.target.style.borderColor='#1B5EA0'}
               onBlur={e=>e.target.style.borderColor='#CBD5E1'} />
             {search && (
               <button onClick={()=>setSearch('')}
-                style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', background:'#E2E8F0', border:'none', borderRadius:'50%', width:22, height:22, cursor:'pointer', fontSize:13, color:'#4A5568', display:'flex', alignItems:'center', justifyContent:'center' }}>×</button>
+                style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', background:'#E2E8F0', border:'none', borderRadius:'50%', width:22, height:22, cursor:'pointer', fontSize:13 }}>×</button>
             )}
           </div>
 
-          <div style={{ display:'flex', gap:10, marginBottom:16, flexWrap:'wrap', alignItems:'center' }}>
+          {/* Filter & Actions */}
+          <div style={{ display:'flex', gap:8, marginBottom:16, flexWrap:'wrap', alignItems:'center' }}>
             <select value={filterDusun} onChange={e=>setFilterDusun(e.target.value)}
               style={{ border:'1.5px solid #CBD5E1', borderRadius:10, padding:'9px 12px', fontSize:13, fontFamily:'inherit', background:'#fff', outline:'none', cursor:'pointer', flex:'1', minWidth:160 }}>
               <option value="">🏘 Semua Dusun ({state.penduduk.length} jiwa)</option>
               {DUSUN_LIST.map(d=>(
-                <option key={d} value={d}>{d} — RW {WILAYAH[d].rw} ({state.penduduk.filter(p=>p.dusun===d).length} jiwa)</option>
+                <option key={d} value={d}>{d} — {state.penduduk.filter(p=>p.dusun===d).length} jiwa</option>
               ))}
             </select>
 
-            {!isSearching && (
+            {!isSearching && !isMobile && (
               <div style={{ display:'flex', gap:6 }}>
                 <Btn onClick={expandAll} variant="ghost" size="sm">📂 Buka</Btn>
                 <Btn onClick={collapseAll} variant="ghost" size="sm">📁 Tutup</Btn>
               </div>
             )}
 
-            <button onClick={()=>setGroupByKK(!groupByKK)}
-              style={{ padding:'8px 14px', fontSize:12, borderRadius:10, border:`1.5px solid ${groupByKK?'#1B5EA0':'#CBD5E1'}`, background:groupByKK?'#EBF3FC':'#fff', color:groupByKK?'#1B5EA0':'#718096', cursor:'pointer', fontFamily:'inherit', fontWeight:groupByKK?700:400 }}>
-              🏠 {groupByKK ? 'Kelompok KK ✓' : 'Kelompok KK'}
-            </button>
-
-            {/* Export selalu bisa, Import & Template hanya user */}
-            <div style={{ display:'flex', gap:6, marginLeft:'auto' }}>
-              <Btn onClick={exportExcel} variant="success" size="sm">📥 Export Excel</Btn>
+            <div style={{ display:'flex', gap:6, marginLeft:'auto', flexWrap:'wrap' }}>
+              <Btn onClick={exportExcel} variant="success" size="sm">📥 Excel</Btn>
               {!readOnly && <Btn onClick={exportTemplate} variant="ghost" size="sm">📋 Template</Btn>}
-              {!readOnly && <Btn onClick={()=>importRef.current?.click()} variant="soft" size="sm">📤 Import Excel</Btn>}
+              {!readOnly && <Btn onClick={()=>importRef.current?.click()} variant="soft" size="sm">📤 Import</Btn>}
               {!readOnly && <input ref={importRef} type="file" accept=".xlsx,.xls" onChange={handleFileImport} style={{ display:'none' }} />}
             </div>
-
-            {isSearching && (
-              <div style={{ fontSize:13, color:'#718096', fontWeight:500 }}>
-                <strong style={{ color:'#1B5EA0' }}>{filtered.length}</strong> ditemukan
-              </div>
-            )}
           </div>
 
-          {filtered.length===0
-            ? <EmptyState icon="🔍" text="Tidak ada data ditemukan" sub="Coba ubah kata pencarian atau filter dusun" />
-            : isSearching ? (
-              <div className="table-wrapper">
-                <div style={{ padding:'10px 14px', background:'#EBF3FC', borderBottom:'1px solid #E2E8F0', fontSize:13, color:'#1B5EA0', fontWeight:600 }}>
-                  🔍 Hasil pencarian "{search}" — {filtered.length} penduduk
-                </div>
-                <TabelPenduduk list={filtered} />
+          {/* Data */}
+          {filtered.length === 0 ? (
+            <EmptyState icon="🔍" text="Tidak ada data ditemukan" sub="Coba ubah kata pencarian atau filter dusun" />
+          ) : isSearching ? (
+            <>
+              <div style={{ padding:'8px 14px', background:'#EBF3FC', borderRadius:10, border:'1px solid #B5D4F4', fontSize:13, color:'#1B5EA0', fontWeight:600, marginBottom:12 }}>
+                🔍 {filtered.length} hasil untuk "{search}"
               </div>
-            ) : (
-              grouped.map((g,gi) => (
-                <div key={g.dusun} style={{ marginBottom:16 }}>
-                  <button onClick={()=>toggleDusun(g.dusun)}
-                    style={{ width:'100%', display:'flex', alignItems:'center', gap:12, padding:'12px 18px', background:'#fff', borderRadius:expandedDusun[g.dusun]?'12px 12px 0 0':12, border:`2px solid ${g.color}44`, boxShadow:'0 1px 4px rgba(0,0,0,0.06)', cursor:'pointer', textAlign:'left', transition:'all 0.2s' }}
-                    onMouseEnter={e=>e.currentTarget.style.background='#F8FAFC'}
-                    onMouseLeave={e=>e.currentTarget.style.background='#fff'}>
-                    <div style={{ width:38, height:38, borderRadius:10, background:g.color, display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontWeight:800, fontSize:15, flexShrink:0 }}>{gi+1}</div>
-                    <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontWeight:700, fontSize:15, color:g.color }}>{g.dusun}</div>
-                      <div style={{ fontSize:12, color:'#718096' }}>RW {WILAYAH[g.dusun].rw} · RT {WILAYAH[g.dusun].rtList[0]}-{WILAYAH[g.dusun].rtList[WILAYAH[g.dusun].rtList.length-1]} · <strong>{g.total} jiwa</strong></div>
-                    </div>
-                    <div style={{ display:'flex', gap:4, flexWrap:'wrap', justifyContent:'flex-end', maxWidth:220 }}>
+              {isMobile ? (
+                <div>{filtered.map(p => <CardPenduduk key={p.id} p={p} />)}</div>
+              ) : (
+                <div className="table-wrapper"><TabelDesktop list={filtered} /></div>
+              )}
+            </>
+          ) : (
+            grouped.map((g,gi) => (
+              <div key={g.dusun} style={{ marginBottom:16 }}>
+                <button onClick={()=>toggleDusun(g.dusun)}
+                  style={{ width:'100%', display:'flex', alignItems:'center', gap:12, padding:'12px 18px', background:'#fff', borderRadius:expandedDusun[g.dusun]?'12px 12px 0 0':12, border:`2px solid ${g.color}44`, boxShadow:'0 1px 4px rgba(0,0,0,0.06)', cursor:'pointer', textAlign:'left' }}
+                  onMouseEnter={e=>e.currentTarget.style.background='#F8FAFC'}
+                  onMouseLeave={e=>e.currentTarget.style.background='#fff'}>
+                  <div style={{ width:38, height:38, borderRadius:10, background:g.color, display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontWeight:800, fontSize:15, flexShrink:0 }}>{gi+1}</div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontWeight:700, fontSize:15, color:g.color }}>{g.dusun}</div>
+                    <div style={{ fontSize:12, color:'#718096' }}>RW {WILAYAH[g.dusun].rw} · <strong>{g.total} jiwa</strong></div>
+                  </div>
+                  {!isMobile && (
+                    <div style={{ display:'flex', gap:4, flexWrap:'wrap', justifyContent:'flex-end', maxWidth:200 }}>
                       {WILAYAH[g.dusun].rtList.map(rt => {
                         const cnt = state.penduduk.filter(p=>p.dusun===g.dusun&&p.rt===rt).length;
                         return cnt>0 ? (
-                          <span key={rt} style={{ fontSize:10, padding:'2px 7px', borderRadius:20, background:`${g.color}22`, color:g.color, fontWeight:700, border:`1px solid ${g.color}44` }}>RT {rt}: {cnt}</span>
+                          <span key={rt} style={{ fontSize:10, padding:'2px 7px', borderRadius:20, background:`${g.color}22`, color:g.color, fontWeight:700, border:`1px solid ${g.color}44` }}>
+                            RT {rt}: {cnt}
+                          </span>
                         ) : null;
                       })}
                     </div>
-                    <div style={{ fontSize:18, color:g.color, marginLeft:6, transition:'transform 0.2s', transform:expandedDusun[g.dusun]?'rotate(90deg)':'rotate(0deg)' }}>›</div>
-                  </button>
-
-                  {expandedDusun[g.dusun] && (
-                    <div style={{ border:`2px solid ${g.color}44`, borderTop:'none', borderRadius:'0 0 12px 12px', overflow:'hidden' }}>
-                      {g.rtGroups.map((rtg,ri)=>(
-                        <div key={rtg.rt}>
-                          <div style={{ display:'flex', alignItems:'center', gap:8, padding:'7px 16px', background:`${g.color}11`, borderBottom:'1px solid #F1F5F9', borderTop:ri===0?'none':'1px solid #E2E8F0' }}>
-                            <div style={{ width:6, height:6, borderRadius:'50%', background:g.color }} />
-                            <span style={{ fontSize:12, fontWeight:700, color:g.color }}>RT {rtg.rt} / RW {WILAYAH[g.dusun].rw}</span>
-                            <span style={{ fontSize:11, color:'#718096' }}>— {rtg.list.length} jiwa</span>
-                          </div>
-                          <div style={{ overflowX:'auto', background:'#fff' }}>
-                            <TabelPenduduk list={rtg.list} />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
                   )}
-                </div>
-              ))
-            )
-          }
+                  <div style={{ fontSize:18, color:g.color, marginLeft:6, transition:'transform 0.2s', transform:expandedDusun[g.dusun]?'rotate(90deg)':'rotate(0deg)' }}>›</div>
+                </button>
+
+                {expandedDusun[g.dusun] && (
+                  <div style={{ border:`2px solid ${g.color}44`, borderTop:'none', borderRadius:'0 0 12px 12px', overflow:'hidden', background:'#fff' }}>
+                    {g.rtGroups.map((rtg,ri)=>(
+                      <div key={rtg.rt}>
+                        <div style={{ display:'flex', alignItems:'center', gap:8, padding:'7px 16px', background:`${g.color}11`, borderTop:ri===0?'none':'1px solid #E2E8F0' }}>
+                          <div style={{ width:6, height:6, borderRadius:'50%', background:g.color }} />
+                          <span style={{ fontSize:12, fontWeight:700, color:g.color }}>RT {rtg.rt} / RW {WILAYAH[g.dusun].rw}</span>
+                          <span style={{ fontSize:11, color:'#718096' }}>— {rtg.list.length} jiwa</span>
+                        </div>
+                        {isMobile ? (
+                          <div style={{ padding:'10px' }}>
+                            {rtg.list.map(p => <CardPenduduk key={p.id} p={p} />)}
+                          </div>
+                        ) : (
+                          <div style={{ overflowX:'auto' }}>
+                            <TabelDesktop list={rtg.list} />
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))
+          )}
         </>
       )}
 
       {/* ═══ RIWAYAT ═══ */}
       {tab==='riwayat' && (
-        <div className="table-wrapper">
-          {state.riwayatPerubahan.length===0
-            ? <EmptyState icon="📋" text="Belum ada riwayat perubahan" />
-            : (
-              <table style={{ width:'100%', borderCollapse:'collapse', fontSize:14, minWidth:500 }}>
-                <thead>
-                  <tr style={{ background:'#F8FAFC' }}>
-                    {['Tanggal','Jenis','NIK','Nama','Keterangan'].map((h,i)=>(
-                      <th key={i} style={{ textAlign:'left', padding:'11px 14px', fontSize:12, fontWeight:700, color:'#4A5568', borderBottom:'2px solid #E2E8F0' }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {state.riwayatPerubahan.map(r=>(
-                    <tr key={r.id} style={{ borderBottom:'1px solid #F1F5F9' }}>
-                      <td style={{ padding:'11px 14px', color:'#718096', whiteSpace:'nowrap' }}>{formatTanggal(r.tanggal)}</td>
-                      <td style={{ padding:'11px 14px' }}>
-                        <Badge type={r.jenis==='Kelahiran'?'success':r.jenis==='Kematian'?'danger':r.jenis==='Pindah Masuk'?'info':'warning'}>{r.jenis}</Badge>
-                      </td>
-                      <td style={{ padding:'11px 14px', fontFamily:'monospace', fontSize:12, color:'#718096' }}>{r.nik||'-'}</td>
-                      <td style={{ padding:'11px 14px', fontWeight:600 }}>{r.nama}</td>
-                      <td style={{ padding:'11px 14px', color:'#718096' }}>{r.keterangan}</td>
+        isMobile ? (
+          <div>
+            {state.riwayatPerubahan.length===0
+              ? <EmptyState icon="📋" text="Belum ada riwayat perubahan" />
+              : state.riwayatPerubahan.map(r=>(
+                <div key={r.id} style={{ background:'#fff', borderRadius:12, border:'1px solid #E2E8F0', padding:'12px 14px', marginBottom:10 }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6 }}>
+                    <Badge type={r.jenis==='Kelahiran'?'success':r.jenis==='Kematian'?'danger':r.jenis==='Pindah Masuk'?'info':'warning'}>{r.jenis}</Badge>
+                    <span style={{ fontSize:11, color:'#A0AEC0' }}>{formatTanggal(r.tanggal)}</span>
+                  </div>
+                  <div style={{ fontWeight:600, fontSize:14 }}>{r.nama}</div>
+                  {r.nik && <div style={{ fontSize:11, color:'#718096', fontFamily:'monospace' }}>{r.nik}</div>}
+                  {r.keterangan && <div style={{ fontSize:12, color:'#718096', marginTop:4 }}>{r.keterangan}</div>}
+                </div>
+              ))
+            }
+          </div>
+        ) : (
+          <div className="table-wrapper">
+            {state.riwayatPerubahan.length===0
+              ? <EmptyState icon="📋" text="Belum ada riwayat perubahan" />
+              : (
+                <table style={{ width:'100%', borderCollapse:'collapse', fontSize:14, minWidth:500 }}>
+                  <thead>
+                    <tr style={{ background:'#F8FAFC' }}>
+                      {['Tanggal','Jenis','NIK','Nama','Keterangan'].map((h,i)=>(
+                        <th key={i} style={{ textAlign:'left', padding:'11px 14px', fontSize:12, fontWeight:700, color:'#4A5568', borderBottom:'2px solid #E2E8F0' }}>{h}</th>
+                      ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-        </div>
+                  </thead>
+                  <tbody>
+                    {state.riwayatPerubahan.map(r=>(
+                      <tr key={r.id} style={{ borderBottom:'1px solid #F1F5F9' }}>
+                        <td style={{ padding:'11px 14px', color:'#718096', whiteSpace:'nowrap' }}>{formatTanggal(r.tanggal)}</td>
+                        <td style={{ padding:'11px 14px' }}>
+                          <Badge type={r.jenis==='Kelahiran'?'success':r.jenis==='Kematian'?'danger':r.jenis==='Pindah Masuk'?'info':'warning'}>{r.jenis}</Badge>
+                        </td>
+                        <td style={{ padding:'11px 14px', fontFamily:'monospace', fontSize:12, color:'#718096' }}>{r.nik||'-'}</td>
+                        <td style={{ padding:'11px 14px', fontWeight:600 }}>{r.nama}</td>
+                        <td style={{ padding:'11px 14px', color:'#718096' }}>{r.keterangan}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+          </div>
+        )
       )}
 
       {/* ═══ STATISTIK ═══ */}
@@ -504,36 +484,7 @@ export default function DataPenduduk({ readOnly = false }) {
             <StatCard label="Perempuan"     value={state.penduduk.filter(p=>p.jenisKelamin==='Perempuan').length} color="#993556" icon="👩" />
             <StatCard label="Penduduk Baru" value={state.penduduk.filter(p=>p.status==='Baru').length} color="#A0621B" icon="🆕" />
           </div>
-          <Card>
-            <div style={{ fontWeight:700, fontSize:15, marginBottom:14 }}>🏘 Penduduk per Dusun & RT</div>
-            {DUSUN_LIST.map((d,i)=>{
-              const cnt = state.penduduk.filter(p=>p.dusun===d).length;
-              return (
-                <div key={d} style={{ marginBottom:14, padding:'12px 14px', background:'#F8FAFC', borderRadius:10, border:`1.5px solid ${DUSUN_COLORS[i]}33` }}>
-                  <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
-                    <div>
-                      <span style={{ fontWeight:700, color:DUSUN_COLORS[i], fontSize:14 }}>{d}</span>
-                      <span style={{ fontSize:11, color:'#718096', marginLeft:8 }}>RW {WILAYAH[d].rw}</span>
-                    </div>
-                    <span style={{ fontWeight:800, fontSize:20, color:DUSUN_COLORS[i] }}>{cnt} jiwa</span>
-                  </div>
-                  <div style={{ height:6, background:'#E2E8F0', borderRadius:4, marginBottom:10 }}>
-                    <div style={{ height:'100%', width:`${state.penduduk.length?Math.round(cnt/state.penduduk.length*100):0}%`, background:DUSUN_COLORS[i], borderRadius:4 }} />
-                  </div>
-                  <div style={{ display:'flex', gap:5, flexWrap:'wrap' }}>
-                    {WILAYAH[d].rtList.map(rt=>{
-                      const cntRt = state.penduduk.filter(p=>p.dusun===d&&p.rt===rt).length;
-                      return (
-                        <span key={rt} style={{ fontSize:11, padding:'2px 9px', borderRadius:20, background:cntRt>0?`${DUSUN_COLORS[i]}22`:'#F1F5F9', color:cntRt>0?DUSUN_COLORS[i]:'#A0AEC0', fontWeight:600, border:`1px solid ${cntRt>0?DUSUN_COLORS[i]+'44':'#E2E8F0'}` }}>
-                          RT {rt}: {cntRt}
-                        </span>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-          </Card>
+
           <div className="grid-2col">
             <Card>
               <div style={{ fontWeight:700, fontSize:15, marginBottom:14 }}>📊 Distribusi Usia</div>
@@ -544,7 +495,7 @@ export default function DataPenduduk({ readOnly = false }) {
                     <span style={{ fontWeight:700 }}>{s.nilai} jiwa</span>
                   </div>
                   <div style={{ height:8, background:'#F1F5F9', borderRadius:4 }}>
-                    <div style={{ height:'100%', width:`${state.penduduk.length?Math.round(s.nilai/state.penduduk.length*100):0}%`, background:'#1B5EA0', borderRadius:4 }} />
+                    <div style={{ height:'100%', width:`${state.penduduk.length?Math.round(s.nilai/state.penduduk.length*100):0}%`, background:'linear-gradient(90deg,#1B5EA0,#1565C0)', borderRadius:4 }} />
                   </div>
                 </div>
               ))}
@@ -558,7 +509,7 @@ export default function DataPenduduk({ readOnly = false }) {
                     <span style={{ fontWeight:700 }}>{s.nilai} jiwa</span>
                   </div>
                   <div style={{ height:8, background:'#F1F5F9', borderRadius:4 }}>
-                    <div style={{ height:'100%', width:`${maxPekerjaan?Math.round(s.nilai/maxPekerjaan*100):0}%`, background:'#534AB7', borderRadius:4 }} />
+                    <div style={{ height:'100%', width:`${maxPekerjaan?Math.round(s.nilai/maxPekerjaan*100):0}%`, background:'linear-gradient(90deg,#534AB7,#6C63FF)', borderRadius:4 }} />
                   </div>
                 </div>
               ))}
@@ -567,7 +518,7 @@ export default function DataPenduduk({ readOnly = false }) {
         </div>
       )}
 
-      {/* ══ MODAL TAMBAH/EDIT (hanya user) ══ */}
+      {/* Modal Tambah/Edit */}
       {!readOnly && (
         <Modal show={showModal} onClose={()=>setShowModal(false)} title={editData?'✏ Edit Data Penduduk':'➕ Tambah Penduduk Baru'} width={620}>
           {error && <Alert type="danger">{error}</Alert>}
@@ -597,7 +548,7 @@ export default function DataPenduduk({ readOnly = false }) {
           <Input label="Pekerjaan" required value={form.pekerjaan} onChange={e=>setForm({...form,pekerjaan:e.target.value})} placeholder="cth: Petani, PNS, Wiraswasta" />
           <Input label="Alamat" value={form.alamat} onChange={e=>setForm({...form,alamat:e.target.value})} placeholder="Nama jalan / kampung" />
           <Select label="Dusun" value={form.dusun} onChange={e=>handleDusunChange(e.target.value)}>
-            {DUSUN_LIST.map(d=><option key={d} value={d}>{d} — RW {WILAYAH[d].rw} (RT {WILAYAH[d].rtList[0]}-{WILAYAH[d].rtList[WILAYAH[d].rtList.length-1]})</option>)}
+            {DUSUN_LIST.map(d=><option key={d} value={d}>{d} — RW {WILAYAH[d].rw}</option>)}
           </Select>
           <div className="form-row">
             <Select label="RT" value={form.rt} onChange={e=>setForm({...form,rt:e.target.value})}>
@@ -622,16 +573,16 @@ export default function DataPenduduk({ readOnly = false }) {
         </Modal>
       )}
 
-      {/* ══ MODAL IMPORT (hanya user) ══ */}
+      {/* Modal Import */}
       {!readOnly && (
         <Modal show={showImportModal} onClose={()=>{ setShowImportModal(false); setImportData([]); }} title="📤 Konfirmasi Import Excel" width={560}>
-          <Alert type="info">Ditemukan <strong>{importData.length} data</strong> di file Excel. Data dengan NIK yang sudah terdaftar akan dilewati otomatis.</Alert>
+          <Alert type="info">Ditemukan <strong>{importData.length} data</strong>. NIK duplikat akan dilewati otomatis.</Alert>
           {importData.length>0 && (
             <div style={{ overflowX:'auto', marginBottom:16 }}>
               <table style={{ width:'100%', borderCollapse:'collapse', fontSize:12, minWidth:400 }}>
                 <thead>
                   <tr style={{ background:'#F8FAFC' }}>
-                    {['NIK','No. KK','Nama','Dusun','RT','Pekerjaan'].map((h,i)=>(
+                    {['NIK','Nama','Dusun','RT','Pekerjaan'].map((h,i)=>(
                       <th key={i} style={{ textAlign:'left', padding:'7px 10px', fontSize:11, fontWeight:700, color:'#4A5568', borderBottom:'1px solid #E2E8F0' }}>{h}</th>
                     ))}
                   </tr>
@@ -640,7 +591,6 @@ export default function DataPenduduk({ readOnly = false }) {
                   {importData.slice(0,5).map((r,i)=>(
                     <tr key={i} style={{ borderBottom:'1px solid #F1F5F9' }}>
                       <td style={{ padding:'7px 10px', fontFamily:'monospace', fontSize:11 }}>{r['NIK']}</td>
-                      <td style={{ padding:'7px 10px', fontFamily:'monospace', fontSize:11 }}>{r['No. KK']||'-'}</td>
                       <td style={{ padding:'7px 10px', fontWeight:600 }}>{r['Nama Lengkap']}</td>
                       <td style={{ padding:'7px 10px' }}>{r['Dusun']}</td>
                       <td style={{ padding:'7px 10px' }}>{r['RT']}</td>
@@ -648,7 +598,7 @@ export default function DataPenduduk({ readOnly = false }) {
                     </tr>
                   ))}
                   {importData.length>5 && (
-                    <tr><td colSpan={6} style={{ padding:'7px 10px', color:'#718096', fontSize:12, textAlign:'center' }}>...dan {importData.length-5} data lainnya</td></tr>
+                    <tr><td colSpan={5} style={{ padding:'7px 10px', color:'#718096', fontSize:12, textAlign:'center' }}>...dan {importData.length-5} data lainnya</td></tr>
                   )}
                 </tbody>
               </table>
@@ -661,7 +611,7 @@ export default function DataPenduduk({ readOnly = false }) {
         </Modal>
       )}
 
-      {/* ══ MODAL RIWAYAT (hanya user) ══ */}
+      {/* Modal Riwayat */}
       {!readOnly && (
         <Modal show={showRiwayatModal} onClose={()=>setShowRiwayatModal(false)} title="📝 Catat Perubahan Penduduk" width={460}>
           <Select label="Jenis Perubahan" value={formRiwayat.jenis} onChange={e=>setFormRiwayat({...formRiwayat,jenis:e.target.value})}>
@@ -678,7 +628,7 @@ export default function DataPenduduk({ readOnly = false }) {
         </Modal>
       )}
 
-      {/* ══ MODAL DETAIL ══ */}
+      {/* Modal Detail */}
       <Modal show={!!showDetail} onClose={()=>setShowDetail(null)} title="👤 Detail Data Penduduk" width={500}>
         {showDetail && (
           <div>
@@ -693,16 +643,16 @@ export default function DataPenduduk({ readOnly = false }) {
               </div>
             </div>
             {[
-              ['🪪 NIK',          showDetail.nik],
-              ['🏠 No. KK',       showDetail.no_kk||'-'],
-              ['📅 TTL',         `${showDetail.tempatLahir}, ${formatTanggal(showDetail.tanggalLahir)}`],
+              ['🪪 NIK', showDetail.nik],
+              ['🏠 No. KK', showDetail.no_kk||'-'],
+              ['📅 TTL', `${showDetail.tempatLahir}, ${formatTanggal(showDetail.tanggalLahir)}`],
               ['⚤ Jenis Kelamin', showDetail.jenisKelamin],
-              ['🕌 Agama',        showDetail.agama],
-              ['🎓 Pendidikan',   showDetail.pendidikan],
+              ['🕌 Agama', showDetail.agama],
+              ['🎓 Pendidikan', showDetail.pendidikan],
               ['💍 Status Kawin', showDetail.statusKawin],
-              ['🏘 Dusun/RW',    `${showDetail.dusun} · RW ${showDetail.rw}`],
-              ['🏠 RT/Alamat',   `RT ${showDetail.rt} · ${showDetail.alamat}`],
-              ['📋 Status',      showDetail.status],
+              ['🏘 Dusun/RW', `${showDetail.dusun} · RW ${showDetail.rw}`],
+              ['🏠 RT/Alamat', `RT ${showDetail.rt} · ${showDetail.alamat}`],
+              ['📋 Status', showDetail.status],
             ].map(([k,v])=>(
               <div key={k} style={{ display:'flex', justifyContent:'space-between', padding:'8px 0', borderBottom:'1px solid #F1F5F9', fontSize:13 }}>
                 <span style={{ color:'#718096', fontWeight:500, flexShrink:0, marginRight:12 }}>{k}</span>
