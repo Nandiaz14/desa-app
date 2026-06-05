@@ -62,6 +62,60 @@ export function StatCard({ label, value, sub, color = '#1B5EA0', icon, trend }) 
     </div>
   );
 }
+export function StatCard({ label, value, sub, color = '#1B5EA0', icon, onClick }) {
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        background: '#fff',
+        border: '1px solid #E2E8F0',
+        borderRadius: 16,
+        padding: '20px 22px',
+        boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 10,
+        cursor: onClick ? 'pointer' : 'default',
+        transition: 'all 0.2s ease',
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+      onMouseEnter={e => {
+        if (onClick) {
+          e.currentTarget.style.transform = 'translateY(-3px)';
+          e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.12)';
+        }
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.transform = 'translateY(0)';
+        e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.06)';
+      }}
+    >
+      {/* Background decoration */}
+      <div style={{
+        position: 'absolute', top: -20, right: -20,
+        width: 80, height: 80, borderRadius: '50%',
+        background: `${color}10`,
+      }} />
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div style={{ fontSize: 13, color: '#718096', fontWeight: 500 }}>{label}</div>
+        {icon && (
+          <div style={{
+            width: 40, height: 40, borderRadius: 10,
+            background: `${color}15`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 20, flexShrink: 0,
+          }}>
+            {icon}
+          </div>
+        )}
+      </div>
+      <div style={{ fontSize: 30, fontWeight: 800, color, lineHeight: 1 }}>{value}</div>
+      {sub && <div style={{ fontSize: 12, color: '#A0AEC0' }}>{sub}</div>}
+    </div>
+  );
+}
 
 /* ─── MODAL ─── */
 export function Modal({ show, onClose, title, children, width = 560 }) {
