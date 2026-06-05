@@ -207,42 +207,33 @@ export default function DataPenduduk({ readOnly = false }) {
 
   // ── CARD MOBILE PENDUDUK ──────────────────────────────
   const CardPenduduk = ({ p }) => (
-    <div style={{
-      background:'#fff', borderRadius:14, border:'1px solid #E2E8F0',
-      padding:'14px 16px', boxShadow:'0 1px 4px rgba(0,0,0,0.06)',
-      marginBottom:10,
-    }}>
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:10 }}>
-        <div style={{ flex:1, minWidth:0 }}>
-          <div style={{ fontWeight:700, fontSize:15, marginBottom:2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.nama}</div>
-          <div style={{ fontSize:11, color:'#718096', fontFamily:'monospace' }}>{p.nik}</div>
-        </div>
-        <Badge type={p.status==='Baru'?'warning':'success'}>{p.status}</Badge>
-      </div>
-
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'6px 16px', marginBottom:12 }}>
-        {[
-          ['🎂 Umur', `${hitungUmur(p.tanggalLahir)} tahun`],
-          ['💼 Pekerjaan', p.pekerjaan],
-          ['🕌 Agama', p.agama],
-          ['📍 RT/RW', `RT ${p.rt} / RW ${p.rw}`],
-          ['🏘 Dusun', p.dusun],
-          ['💍 Status', p.statusKawin],
-        ].map(([label, val]) => (
-          <div key={label}>
-            <div style={{ fontSize:10, color:'#A0AEC0', marginBottom:1 }}>{label}</div>
-            <div style={{ fontSize:12, fontWeight:600, color:'#1A2332', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{val||'-'}</div>
-          </div>
-        ))}
-      </div>
-
-      <div style={{ display:'flex', gap:6, borderTop:'1px solid #F1F5F9', paddingTop:10 }}>
-        <Btn onClick={()=>setShowDetail(p)} size="sm" style={{ flex:1, justifyContent:'center', fontSize:11 }}>👁 Detail</Btn>
-        {!readOnly && <Btn onClick={()=>bukaEdit(p)} variant="soft" size="sm" style={{ flex:1, justifyContent:'center', fontSize:11 }}>✏ Edit</Btn>}
-        {!readOnly && <Btn onClick={()=>hapus(p.id)} variant="danger" size="sm" style={{ flex:1, justifyContent:'center', fontSize:11 }}>🗑 Hapus</Btn>}
-      </div>
+  <div style={{
+    background:'#fff', borderRadius:10, border:'1px solid #E2E8F0',
+    padding:'10px 12px', marginBottom:6,
+    display:'flex', alignItems:'center', gap:10,
+  }}>
+    {/* Icon */}
+    <div style={{ width:34, height:34, borderRadius:8, background:p.jenisKelamin==='Laki-laki'?'#EBF3FC':'#FBEAF0', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, flexShrink:0 }}>
+      {p.jenisKelamin==='Laki-laki'?'👨':'👩'}
     </div>
-  );
+
+    {/* NIK */}
+    <div style={{ fontSize:10, color:'#A0AEC0', fontFamily:'monospace', flexShrink:0 }}>
+      {p.nik}
+    </div>
+
+    {/* Nama */}
+    <div style={{ flex:1, minWidth:0 }}>
+      <div style={{ fontWeight:700, fontSize:13, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.nama}</div>
+      <div style={{ fontSize:10, color:'#A0AEC0' }}>{p.dusun} · RT {p.rt}</div>
+    </div>
+
+    {/* Tombol Detail */}
+    <Btn onClick={()=>setShowDetail(p)} size="sm" variant="soft" style={{ fontSize:11, padding:'5px 10px', flexShrink:0 }}>
+      Detail
+    </Btn>
+  </div>
+);
 
   // ── TABEL DESKTOP ─────────────────────────────────────
   const TabelDesktop = ({ list }) => (
