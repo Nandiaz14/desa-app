@@ -9,7 +9,7 @@ import { Badge, Card, Modal, Input, Select, Btn, EmptyState, Alert, SectionHeade
 
 const AGAMA        = ['Islam','Kristen','Katolik','Hindu','Buddha','Konghucu'];
 const PENDIDIKAN   = ['Tidak Sekolah','SD','SMP','SMA','SMK','D3','S1','S2','S3'];
-const STATUS_KAWIN = ['Belum Kawin','Kawin','Cerai Hidup','Cerai Mati'];
+const STATUS_KAWIN = ['Belum Menikah','Sudah Menikah','Cerai Hidup','Cerai Mati'];
 const JENIS_RIWAYAT= ['Kelahiran','Kematian','Pindah Masuk','Pindah Keluar'];
 const DUSUN_COLORS = ['#1B5EA0','#534AB7','#2D6A0F','#A0621B','#C0392B'];
 

@@ -109,7 +109,7 @@ export function AppProvider({ children }) {
 
   // ── FORMAT React → MySQL ─────────────────────────────────
   const toApiPenduduk = f => ({
-    nik: f.nik, nama: f.nama, tempat_lahir: f.tempatLahir,
+    nik: f.nik, no_kk: f.no_kk, nama: f.nama, tempat_lahir: f.tempatLahir,
     tanggal_lahir: f.tanggalLahir, jenis_kelamin: f.jenisKelamin,
     agama: f.agama, pendidikan: f.pendidikan, pekerjaan: f.pekerjaan,
     status_kawin: f.statusKawin, alamat: f.alamat, rt: f.rt, rw: f.rw,
