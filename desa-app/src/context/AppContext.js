@@ -74,7 +74,7 @@ export function AppProvider({ children }) {
     id: p.id, nik: p.nik, nama: p.nama,
     tempatLahir: p.tempat_lahir, tanggalLahir: p.tanggal_lahir?.split('T')[0]||p.tanggal_lahir,
     jenisKelamin: p.jenis_kelamin, agama: p.agama, pendidikan: p.pendidikan,
-    pekerjaan: p.pekerjaan, statusKawin: p.status_kawin, alamat: p.alamat,
+    pekerjaan: p.pekerjaan, statusKawin: p.status_kawin, statusPerkawinan: p.status_kawin, no_kk: p.no_kk, alamat: p.alamat,
     rt: p.rt, rw: p.rw, dusun: p.dusun, status: p.status,
     tanggalMasuk: p.tanggal_masuk?.split('T')[0]||p.tanggal_masuk,
     keterangan: p.keterangan||'',
