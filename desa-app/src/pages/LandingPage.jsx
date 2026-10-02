@@ -273,35 +273,6 @@ export default function LandingPage({ onMasuk }) {
     };
   }, []);
 
-  if (loading) {
-    return (
-      <div style={{
-        minHeight:'100vh',
-        background:'linear-gradient(135deg,#060F1E 0%,#0F2D5E 45%,#1A4080 100%)',
-        display:'flex', flexDirection:'column',
-        alignItems:'center', justifyContent:'center', gap:20,
-        fontFamily:"'Plus Jakarta Sans', system-ui, sans-serif",
-      }}>
-        <div style={{ fontSize:52 }}>🏛️</div>
-        <div style={{ color:'white', fontSize:20, fontWeight:700, letterSpacing:'.02em' }}>
-          Desa Cikulak
-        </div>
-        <div style={{ color:'rgba(255,255,255,.5)', fontSize:13 }}>
-          Kec. Waled, Kab. Cirebon
-        </div>
-        <div style={{
-          width:40, height:40,
-          border:'3px solid rgba(255,255,255,.15)',
-          borderTop:'3px solid #C9A84C',
-          borderRadius:'50%',
-          animation:'lp-spin 0.8s linear infinite',
-          marginTop:8,
-        }}/>
-        <style>{`@keyframes lp-spin{to{transform:rotate(360deg)}}`}</style>
-      </div>
-    );
-  }
-
   useEffect(() => {
     const onScroll = () => navRef.current?.classList.toggle('scrolled', window.scrollY > 80);
     window.addEventListener('scroll', onScroll);
@@ -365,6 +336,35 @@ export default function LandingPage({ onMasuk }) {
     }
     return () => { if (container) container.innerHTML = ''; };
   }, []);
+
+  if (loading) {
+    return (
+      <div style={{
+        minHeight:'100vh',
+        background:'linear-gradient(135deg,#060F1E 0%,#0F2D5E 45%,#1A4080 100%)',
+        display:'flex', flexDirection:'column',
+        alignItems:'center', justifyContent:'center', gap:20,
+        fontFamily:"'Plus Jakarta Sans', system-ui, sans-serif",
+      }}>
+        <div style={{ fontSize:52 }}>🏛️</div>
+        <div style={{ color:'white', fontSize:20, fontWeight:700, letterSpacing:'.02em' }}>
+          Desa Cikulak
+        </div>
+        <div style={{ color:'rgba(255,255,255,.5)', fontSize:13 }}>
+          Kec. Waled, Kab. Cirebon
+        </div>
+        <div style={{
+          width:40, height:40,
+          border:'3px solid rgba(255,255,255,.15)',
+          borderTop:'3px solid #C9A84C',
+          borderRadius:'50%',
+          animation:'lp-spin 0.8s linear infinite',
+          marginTop:8,
+        }}/>
+        <style>{`@keyframes lp-spin{to{transform:rotate(360deg)}}`}</style>
+      </div>
+    );
+  }
 
   const scrollTo = (id) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
