@@ -20,7 +20,7 @@ const inputStyle = {
   outline:'none', transition:'border-color 0.2s',
 };
 
-export default function LoginPage() {
+export default function LoginPage({ onBack }) {
   const { login, register, loginError, setLoginError, loading } = useAuth();
   const [mode,            setMode]            = useState('login');
   const [showPass,        setShowPass]        = useState(false);
@@ -76,6 +76,19 @@ export default function LoginPage() {
     }}>
       <div style={{ width:'100%', maxWidth: mode==='register' ? 500 : 440 }}>
 
+        {/* Tombol Kembali ke Beranda */}
+        {onBack && (
+          <button onClick={onBack} style={{
+            display:'flex', alignItems:'center', gap:6,
+            background:'rgba(255,255,255,0.15)',
+            border:'1px solid rgba(255,255,255,0.3)',
+            color:'#fff', borderRadius:10, padding:'7px 14px',
+            fontSize:13, fontWeight:600, cursor:'pointer', marginBottom:16
+          }}>
+            ← Kembali ke Beranda
+          </button>
+        )}
+
         {/* Logo */}
         <div style={{ textAlign:'center', marginBottom:28, color:'#fff' }}>
           <div style={{ width:80, height:80, borderRadius:24, background:'rgba(255,255,255,0.2)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:38, margin:'0 auto 16px', border:'2px solid rgba(255,255,255,0.3)' }}>🏛</div>
@@ -85,7 +98,7 @@ export default function LoginPage() {
 
         <div style={{ background:'#fff', borderRadius:24, overflow:'hidden', boxShadow:'0 24px 80px rgba(0,0,0,0.25)' }}>
 
-          {/* ══ HALAMAN TUNGGU PERSETUJUAN ══ */}
+          {/* HALAMAN TUNGGU PERSETUJUAN */}
           {waitingApproval ? (
             <div style={{ padding:'40px 32px', textAlign:'center' }}>
               <div style={{ fontSize:64, marginBottom:16 }}>⏳</div>
@@ -125,7 +138,7 @@ export default function LoginPage() {
 
               <div style={{ padding:'28px 32px 32px' }}>
 
-                {/* ══ FORM LOGIN ══ */}
+                {/* FORM LOGIN */}
                 {mode==='login' && (
                   <form onSubmit={handleLogin}>
                     {loginError && (
@@ -174,7 +187,7 @@ export default function LoginPage() {
                   </form>
                 )}
 
-                {/* ══ FORM REGISTER ══ */}
+                {/* FORM REGISTER */}
                 {mode==='register' && (
                   <form onSubmit={handleRegister}>
                     {regError && (
@@ -183,7 +196,6 @@ export default function LoginPage() {
                       </div>
                     )}
 
-                    {/* Pilih Role */}
                     <div style={{ marginBottom:16 }}>
                       <label style={{ display:'block', fontSize:14, fontWeight:600, color:'#4A5568', marginBottom:8 }}>
                         Daftar Sebagai <span style={{ color:'#C0392B' }}>*</span>

@@ -283,7 +283,7 @@ function AuthGate() {
 
   return isLoggedIn
     ? <AppProvider><AppInner /></AppProvider>
-    : <LoginPage />;
+    : <LoginPage onBack={() => setShowLanding(true)} />;
 }
 
 export default function App() {
