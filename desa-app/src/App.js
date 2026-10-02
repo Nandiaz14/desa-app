@@ -11,6 +11,7 @@ import Bansos       from './pages/Bansos';
 import Fasilitas    from './pages/Fasilitas';
 import Laporan      from './pages/Laporan';
 import './index.css';
+import LandingPage from './pages/LandingPage';
 
 const NAV_ADMIN = [
   { id:'dashboard', label:'Beranda',        emoji:'🏠', desc:'Ringkasan data' },
@@ -273,7 +274,13 @@ function AppInner() {
 }
 
 function AuthGate() {
+  const [showLanding, setShowLanding] = React.useState(true);
   const { isLoggedIn } = useAuth();
+
+  if (showLanding && !isLoggedIn) {
+    return <LandingPage onMasuk={() => setShowLanding(false)} />;
+  }
+
   return isLoggedIn
     ? <AppProvider><AppInner /></AppProvider>
     : <LoginPage />;
