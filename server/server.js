@@ -9,6 +9,7 @@ const suratRouter            = require('./routes/surat');
 const pengaturanRouter       = require('./routes/pengaturan');
 const bansosRouter           = require('./routes/bansos');
 const fasilitasRouter        = require('./routes/fasilitas');
+const wargaRouter     = require('./routes/warga');
 
 const app = express();
 
@@ -35,6 +36,7 @@ app.use('/api/surat',      suratRouter);
 app.use('/api/pengaturan', pengaturanRouter);
 app.use('/api/bansos',     bansosRouter);
 app.use('/api/fasilitas',  fasilitasRouter);
+app.use('/api/warga',     wargaRouter);
 
 app.get('/api/health', (req, res) => {
   res.json({ ok: true, msg: 'Server Desa Cikulak berjalan normal ✅', time: new Date().toLocaleString('id-ID') });

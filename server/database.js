@@ -191,8 +191,12 @@ async function initDatabase() {
         FOREIGN KEY (fasilitas_id) REFERENCES fasilitas(id) ON DELETE CASCADE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     `);
+    
 
     console.log('✅ Semua tabel berhasil dibuat');
+
+    await conn.execute(`CREATE TABLE IF NOT EXISTS warga_akun (id INT AUTO_INCREMENT PRIMARY KEY, nik VARCHAR(16) UNIQUE NOT NULL, nama VARCHAR(100) NOT NULL, no_hp VARCHAR(20), password VARCHAR(255) NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`);
+    console.log('✅ Tabel warga_akun siap');
 
     const alterColumns = [
       { sql: 'ALTER TABLE penduduk ADD COLUMN no_kk VARCHAR(16) AFTER nik', msg: 'Kolom no_kk' },
@@ -201,6 +205,7 @@ async function initDatabase() {
       { sql: 'ALTER TABLE users ADD COLUMN otp_code VARCHAR(6) DEFAULT NULL', msg: 'Kolom otp_code' },
       { sql: 'ALTER TABLE users ADD COLUMN otp_expired DATETIME DEFAULT NULL', msg: 'Kolom otp_expired' },
     ];
+    
 
     for (const col of alterColumns) {
       try {
