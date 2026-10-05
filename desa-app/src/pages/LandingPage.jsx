@@ -270,7 +270,7 @@ const styles = `
 }
 `;
 
-export default function LandingPage({ onMasuk }) {
+export default function LandingPage({ onMasuk, onMasukWarga }) {
   const navRef = useRef(null);
   const heroAnimated = useRef(false);
   const counterAnimated = useRef(false);
