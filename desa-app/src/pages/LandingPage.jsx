@@ -645,7 +645,7 @@ export default function LandingPage({ onMasuk }) {
             <p className="lp-cta-desc">Masuk sebagai perangkat desa atau warga untuk mengakses layanan administrasi secara online.</p>
             <div className="lp-cta-btns">
               <button className="lp-cta-btn-gold" onClick={onMasuk}>🏛️ Login Perangkat Desa</button>
-              <button className="lp-cta-btn-ghost" onClick={onMasuk}>👤 Login Masyarakat</button>
+              <button className="lp-cta-btn-ghost" onClick={onMasukWarga}>👤 Login Masyarakat</button>
             </div>
           </div>
         </div>

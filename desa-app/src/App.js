@@ -10,7 +10,9 @@ import ManajemenUser from './pages/ManajemenUser';
 import Bansos        from './pages/Bansos';
 import Fasilitas     from './pages/Fasilitas';
 import Laporan       from './pages/Laporan';
-import LandingPage   from './pages/LandingPage';
+import LandingPage     from './pages/LandingPage';
+import LoginWarga     from './pages/LoginWarga';
+import DashboardWarga from './pages/DashboardWarga';
 import './index.css';
 
 // ── WARNA TEMA ──
@@ -304,10 +306,40 @@ function AppInner() {
 
 function AuthGate() {
   const [showLanding, setShowLanding] = React.useState(true);
+  const [showWarga,   setShowWarga]   = React.useState(false);
+  const [wargaData,   setWargaData]   = React.useState(() => {
+    try { return JSON.parse(localStorage.getItem('warga_data')); } catch { return null; }
+  });
+  const [wargaToken, setWargaToken] = React.useState(() => localStorage.getItem('warga_token') || '');
   const { isLoggedIn } = useAuth();
 
+  const handleWargaLogin = (data, token) => {
+    setWargaData(data);
+    setWargaToken(token);
+    setShowWarga(false);
+  };
+
+  const handleWargaLogout = () => {
+    localStorage.removeItem('warga_token');
+    localStorage.removeItem('warga_data');
+    setWargaData(null);
+    setWargaToken('');
+    setShowLanding(true);
+  };
+
+  if (wargaData && wargaToken) {
+    return <DashboardWarga warga={wargaData} token={wargaToken} onLogout={handleWargaLogout} />;
+  }
+
+  if (showWarga) {
+    return <LoginWarga onBack={() => { setShowWarga(false); setShowLanding(true); }} onLoginSuccess={handleWargaLogin} />;
+  }
+
   if (showLanding && !isLoggedIn) {
-    return <LandingPage onMasuk={() => setShowLanding(false)} />;
+    return <LandingPage
+      onMasuk={() => setShowLanding(false)}
+      onMasukWarga={() => { setShowLanding(false); setShowWarga(true); }}
+    />;
   }
 
   return isLoggedIn
